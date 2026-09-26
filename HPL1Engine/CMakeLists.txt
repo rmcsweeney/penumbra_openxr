@@ -10,6 +10,7 @@ file(GLOB_RECURSE all_sources CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/sources/*.c
 )
 list(FILTER all_sources EXCLUDE REGEX "/(win32\\.cpp|VideoStreamTheora\\.cpp)$")
+list(FILTER all_sources EXCLUDE REGEX "/sources/vr/VRBackend(OpenVR|OpenXR)\\.cpp$")
 
 add_library(HPL STATIC ${all_sources})
 
@@ -19,6 +20,12 @@ target_include_directories(HPL PUBLIC
 		${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/include
 )
 target_link_libraries(HPL PUBLIC OALWrapper)
+
+if (VR_BACKEND STREQUAL "OPENVR")
+    target_sources(HPL PRIVATE sources/vr/VRBackendOpenVR.cpp)
+    target_include_directories(HPL PRIVATE ${CMAKE_SOURCE_DIR}/dependencies/openvr-1.0.2/headers)
+    target_compile_definitions(HPL PUBLIC HPL_VR_OPENVR=1)
+endif ()
 
 # TODO: here be 32 bit prebuilts
 add_library(Newton STATIC IMPORTED)
