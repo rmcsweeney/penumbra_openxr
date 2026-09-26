@@ -11,26 +11,42 @@ namespace vr { class IVRSystem; }
 
 namespace hpl
 {
-
 	class cVRBackendOpenVR: public iVRBackend
 	{
 	public:
-		bool Init() override { return true; }
-		void Shutdown() override {}
-		bool IsActive() const override { return false; }
+		cVRBackendOpenVR();
+		~cVRBackendOpenVR() override;
 
-		void BeginFrame() override {};
-		void EndFrame() override {};
+		//Lifetime
+		bool Init() override;
+		void Shutdown() override;
+		bool IsActive() const override { return mpHMD != nullptr; };
 
-		cVRPose GetHeadPose() const override { return cVRPose(); };
-		cVRPose GetHandPose(eVRHand aHand) const override { return cVRPose(); };
-		cVRButtonState GetButtons(eVRHand aHand) const override { return cVRButtonState(); };
+		//per frame
+		void BeginFrame() override;
+		void EndFrame() override;
 
-		void GetEyeSize(int& w, int& h) const override { w = 0; h = 0; };
-		cVREyeView GetEyeView(eVREye aEye) const override { return cVREyeView(); };
-		void SubmitEye(eVREye aEye, unsigned int alGLTexture) override {};
+		//tracking
+		cVRPose GetHeadPose() const override { return mHead; };
+		cVRPose GetHandPose(eVRHand aHand) const override { return mHands[aHand]; };
+		cVRButtonState GetButtons(eVRHand aHand) const override { return mButtons[aHand]; };
+
+		//rendering
+		void GetEyeSize(int& alWidth, int& alHeight) const override { mlEyeWidth = alWidth; mlEyeHeight = alHeight; };
+		cVREyeView GetEyeView(eVREye aEye) const override;
+		void SubmitEye(eVREye aEye, unsigned int alGLTexture) override;
+
+	private:
+		void ReadButtons(unsigned int alDevice, cVRButtonState &aOut);
+
+		vr::IVRSystem *mpHMD;
+		mutable int mlEyeWidth;
+		mutable int mlEyeHeight;
+
+		cVRPose mHead;
+		cVRPose mHands[2];
+		cVRButtonState mButtons[2];
+
 	};
 }
-
-
 #endif //PENUMBRAOPENXR_VRBACKENDOPENVR_H

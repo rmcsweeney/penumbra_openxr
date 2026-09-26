@@ -19,8 +19,8 @@ namespace hpl
 	struct cVREyeView
 	{
 		cMatrixf eyeToHead = cMatrixf::Identity;
-		//measured in radians in OpenXR
-		float fovLeft = 0, fovRight = 0, fovUp = 0, fovDown = 0;
+		//measured in tangents values in engine code (Camera3D::SetVRProjectionMatrix), OpenVR GetProjectionRaw
+		float tanLeft = 0, tanRight = 0, tanUp = 0, tanDown = 0;
 	};
 
 	//TODO: currently maps Vive-style controller
