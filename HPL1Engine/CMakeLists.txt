@@ -14,6 +14,9 @@ list(FILTER all_sources EXCLUDE REGEX "/sources/vr/VRBackend(OpenVR|OpenXR)\\.cp
 
 add_library(HPL STATIC ${all_sources})
 
+#temp include to fix GLee issue of glx.h including new versions, this uses GLee 5.4
+target_compile_definitions(HPL PUBLIC GL_GLEXT_LEGACY GLX_GLXEXT_LEGACY)
+
 target_include_directories(HPL PUBLIC
 		${CMAKE_CURRENT_SOURCE_DIR}/include
 		${CMAKE_CURRENT_SOURCE_DIR}/../OALWrapper/include

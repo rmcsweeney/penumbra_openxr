@@ -18,8 +18,6 @@
  */
 #include "graphics/Renderer3D.h"
 
-#include "GL/GLee.h"
-
 #include "math/Math.h"
 #include "graphics/Texture.h"
 #include "system/LowLevelSystem.h"
@@ -40,6 +38,8 @@
 #include "resources/GpuProgramManager.h"
 #include "graphics/GPUProgram.h"
 #include "graphics/RendererPostEffects.h"
+
+#include "GL/GLee.h"
 
 namespace hpl {
 	//////////////////////////////////////////////////////////////////////////
@@ -295,10 +295,11 @@ namespace hpl {
 
 	//-----------------------------------------------------------------------
   
-  void cRenderer3D::CreateVREyeTextures(vr::IVRSystem* vr_hmd) {
+  void cRenderer3D::CreateVREyeTextures(int alWidth, int alHeight) {
     Log("   init vr eye textures");
 
-    vr_hmd->GetRecommendedRenderTargetSize(&m_nVRRenderWidth, &m_nVRRenderHeight);
+    m_nVRRenderWidth = alWidth;
+		m_nVRRenderHeight = alHeight;
 
     CreateFrameBuffer((int)m_nVRRenderWidth, (int)m_nVRRenderHeight, leftEyeDesc);
     CreateFrameBuffer((int)m_nVRRenderWidth, (int)m_nVRRenderHeight, rightEyeDesc);
