@@ -4,4 +4,13 @@ Fork of the veryjos/penumbra_vr mod, which is 32bit and uses OpenVR. That mod is
 
 ## Status
 
-Nothing yet.
+- [X] OpenVR implementation refactored and made optional
+- [X] Engine code compiles on a 64-bit system
+- [ ] Remove 32-bit binary dependencies in favor of system 64-bit dependencies.
+- [ ] Migrate AngelScript to 2.35
+- [ ] Migrate Newton to 2.36
+- [ ] Migrate Cg shaders to GLSL shaders
+- [ ] Migrate SDL1.2 to SDL2
+#### Milestone 1: Native 64-bit Penumbra
+- [ ] OpenXR Implementation
+####
