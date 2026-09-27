@@ -74,6 +74,7 @@ namespace hpl {
 		 * Called by cGame
 		 */
 		void Render(cUpdater* apUpdater, float afFrameTime);
+		void RenderVR(cUpdater* apUpdater, float afFrameTime);
 
 		bool LoadMap2D(tString asFile);
 

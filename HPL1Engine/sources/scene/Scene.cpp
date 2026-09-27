@@ -16,7 +16,6 @@
  * You should have received a copy of the GNU General Public License
  * along with HPL1 Engine.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "openvr.h"
 
 #include "math/Math.h"
 
@@ -47,9 +46,9 @@
 #include "resources/FileSearcher.h"
 #include "resources/MeshLoaderHandler.h"
 
-#include "GL\GLee.h"
-
 #include "game/Game.h"
+#include "vr/VRBackend.h"
+#include "GL/GLee.h"
 
 namespace hpl {
 
@@ -305,6 +304,63 @@ namespace hpl {
 
 	//-----------------------------------------------------------------------
 
+	//Original Frictional Games' flat renderer
+	void cScene::Render(cUpdater* apUpdater, float afFrameTime)
+	{
+		//escape from generic render call for VR mode, always call Render
+		if (gGame->mpVR->IsActive())
+		{
+			RenderVR(apUpdater, afFrameTime);
+			return;
+		}
+
+		if(mbDrawScene && mpActiveCamera)
+		{
+			if(mpActiveCamera->GetType() == eCameraType_2D)
+			{
+				cCamera2D* pCamera2D = static_cast<cCamera2D*>(mpActiveCamera);
+
+				//pCamera2D->SetModelViewMatrix(mpGraphics->GetLowLevel());
+
+				if(mpCurrentWorld2D){
+					mpCurrentWorld2D->Render(pCamera2D);
+				}
+
+				mpGraphics->GetRenderer2D()->RenderObjects(pCamera2D,mpCurrentWorld2D->GetGridMapLights(),mpCurrentWorld2D);
+			}
+			else
+			{
+				cCamera3D* pCamera3D = static_cast<cCamera3D*>(mpActiveCamera);
+
+				if(mpCurrentWorld3D)
+				{
+					START_TIMING(RenderWorld)
+					mpGraphics->GetRenderer3D()->RenderWorld(mpCurrentWorld3D, pCamera3D,afFrameTime);
+					STOP_TIMING(RenderWorld)
+				}
+			}
+			START_TIMING(PostSceneDraw)
+			apUpdater->OnPostSceneDraw();
+			STOP_TIMING(PostSceneDraw)
+
+			START_TIMING(PostEffects)
+			mpGraphics->GetRendererPostEffects()->Render();
+			STOP_TIMING(PostEffects)
+		}
+		else
+		{
+			apUpdater->OnPostSceneDraw();
+			//S
+			//mpGraphics->GetLowLevel()->SetClearColor(cColor(0,1));
+			//mpGraphics->GetLowLevel()->ClearScreen();
+		}
+		mpGraphics->GetDrawer()->DrawAll();
+
+		apUpdater->OnPostGUIDraw();
+	}
+
+	//-----------------------------------------------------------------------
+
 	void cScene::SetDrawScene(bool abX)
 	{
 		mbDrawScene = abX;
@@ -313,50 +369,11 @@ namespace hpl {
 
 	//-----------------------------------------------------------------------
 
-  static inline void LogCompositorError(vr::EVRCompositorError error) {
-    if (error != vr::VRCompositorError_None) {
-      switch (error) {
-      case vr::VRCompositorError_DoNotHaveFocus:
-        Log("Error: VRCompositorError_DoNotHaveFocus\n");
-        break;
-
-      case vr::VRCompositorError_IncompatibleVersion:
-        Log("Error: VRCompositorError_IncompatibleVersion\n");
-        break;
-
-      case vr::VRCompositorError_InvalidTexture:
-        Log("Error: VRCompositorError_InvalidTexture\n");
-        break;
-
-      case vr::VRCompositorError_IsNotSceneApplication:
-        Log("Error: VRCompositorError_IsNotSceneApplication\n");
-        break;
-
-      case vr::VRCompositorError_SharedTexturesNotSupported:
-        Log("Error: VRCompositorError_SharedTexturesNotSupported\n");
-        break;
-
-      case vr::VRCompositorError_TextureIsOnWrongDevice:
-        Log("Error: VRCompositorError_TextureIsOnWrongDevice\n");
-        break;
-
-      case vr::VRCompositorError_TextureUsesUnsupportedFormat:
-        Log("Error: VRCompositorError_TextureUsesUnsupportedFormat\n");
-        break;
-
-      default:
-        Log("Error: Unknown VRCompositorError\n");
-        break;
-      }
-    }
-  }
-
-	void cScene::Render(cUpdater* apUpdater, float afFrameTime)
+	//VR rendering
+	void cScene::RenderVR(cUpdater* apUpdater, float afFrameTime)
 	{
     mpGraphics->GetLowLevel()->SetRenderTarget(nullptr);
-
-    auto hmd = gGame->vr_hmd;
-
+	iVRBackend *pVR = gGame->mpVR;
 		if(mbDrawScene && mpActiveCamera)
 		{
       // When the scene is being rendered in 2D, we want to draw it to the desktop
@@ -375,6 +392,8 @@ namespace hpl {
         glViewport(0, 0, mpGraphics->GetRenderer3D()->m_nVRRenderWidth, mpGraphics->GetRenderer3D()->m_nVRRenderHeight);
 
         // Draw 2D scene for HMD
+
+
         for (int i = 0; i < 2; ++i) {
           cCamera3D* pCamera3D = static_cast<cCamera3D*>(mpActiveCamera);
 
@@ -387,17 +406,17 @@ namespace hpl {
           cVector3f up = cVector3f(0.0f, 0.0f, 0.0f);
           cVector3f eyepos = cVector3f(0.0f, 0.0f, 0.0f);
 
-          float top, left, right, bottom;
+        	eVREye eye = (i == 0) ? eVREye_Left : eVREye_Right;
+        	cVREyeView view = pVR->GetEyeView(eye);
+			float top = view.tanUp;
+        	float left = view.tanLeft;
+        	float right = view.tanRight;
+        	float bottom = view.tanDown;
+        	eye_mat = view.eyeToHead;
           if (i == 0) {
-            hmd->GetProjectionRaw(vr::Eye_Left, &left, &right, &top, &bottom);
-            eye_mat = cMatrixf::FromSteamVRMatrix34(hmd->GetEyeToHeadTransform(vr::Eye_Left));
-
             glBindFramebuffer(GL_FRAMEBUFFER, mpGraphics->GetRenderer3D()->leftEyeDesc.m_nRenderFramebufferId);
           }
           else {
-            hmd->GetProjectionRaw(vr::Eye_Right, &left, &right, &top, &bottom);
-            eye_mat = cMatrixf::FromSteamVRMatrix34(hmd->GetEyeToHeadTransform(vr::Eye_Right));
-
             glBindFramebuffer(GL_FRAMEBUFFER, mpGraphics->GetRenderer3D()->rightEyeDesc.m_nRenderFramebufferId);
           }
 
@@ -560,11 +579,14 @@ namespace hpl {
             cVector3f up = cVector3f(0.0f, 0.0f, 0.0f);
             cVector3f eyepos = cVector3f(0.0f, 0.0f, 0.0f);
 
-            float top, left, right, bottom;
+          	eVREye eye = (i == 0) ? eVREye_Left : eVREye_Right;
+          	cVREyeView view = pVR->GetEyeView(eye);
+          	float top = view.tanUp;
+          	float left = view.tanLeft;
+          	float right = view.tanRight;
+          	float bottom = view.tanDown;
+          	eye_mat = view.eyeToHead;
             if (i == 0) {
-              eye_mat = cMatrixf::FromSteamVRMatrix34(hmd->GetEyeToHeadTransform(vr::Eye_Left));
-
-              hmd->GetProjectionRaw(vr::Eye_Left, &left, &right, &top, &bottom);
               pCamera3D->SetVRProjectionMatrix(top, left, right, bottom);
 
               glBindFramebuffer(GL_FRAMEBUFFER, mpGraphics->GetRenderer3D()->leftEyeDesc.m_nRenderFramebufferId);
@@ -573,9 +595,6 @@ namespace hpl {
               glViewport(0, 0, mpGraphics->GetRenderer3D()->m_nVRRenderWidth, mpGraphics->GetRenderer3D()->m_nVRRenderHeight);
             }
             else if (i == 1) {
-              eye_mat = cMatrixf::FromSteamVRMatrix34(hmd->GetEyeToHeadTransform(vr::Eye_Right));
-
-              hmd->GetProjectionRaw(vr::Eye_Right, &left, &right, &top, &bottom);
               pCamera3D->SetVRProjectionMatrix(top, left, right, bottom);
 
               glBindFramebuffer(GL_FRAMEBUFFER, mpGraphics->GetRenderer3D()->rightEyeDesc.m_nRenderFramebufferId);
@@ -712,20 +731,20 @@ namespace hpl {
         cVector3f up = cVector3f(0.0f, 0.0f, 0.0f);
         cVector3f eyepos = cVector3f(0.0f, 0.0f, 0.0f);
 
-        float top, left, right, bottom;
+      	eVREye eye = (i == 0) ? eVREye_Left : eVREye_Right;
+      	cVREyeView view = pVR->GetEyeView(eye);
+      	float top = view.tanUp;
+      	float left = view.tanLeft;
+      	float right = view.tanRight;
+      	float bottom = view.tanDown;
+      	eye_mat = view.eyeToHead;
         if (i == 0) {
-          hmd->GetProjectionRaw(vr::Eye_Left, &left, &right, &top, &bottom);
           pCamera3D->SetVRProjectionMatrix(top, left, right, bottom);
-
-          eye_mat = cMatrixf::FromSteamVRMatrix34(hmd->GetEyeToHeadTransform(vr::Eye_Left));
 
           glBindFramebuffer(GL_FRAMEBUFFER, mpGraphics->GetRenderer3D()->leftEyeDesc.m_nRenderFramebufferId);
         }
         else {
-          hmd->GetProjectionRaw(vr::Eye_Right, &left, &right, &top, &bottom);
           pCamera3D->SetVRProjectionMatrix(top, left, right, bottom);
-
-          eye_mat = cMatrixf::FromSteamVRMatrix34(hmd->GetEyeToHeadTransform(vr::Eye_Right));
 
           glBindFramebuffer(GL_FRAMEBUFFER, mpGraphics->GetRenderer3D()->rightEyeDesc.m_nRenderFramebufferId);
         }
@@ -746,7 +765,10 @@ namespace hpl {
 
         // Move to face height, edge of play space
         float xSize, ySize;
-        vr::VRChaperone()->GetPlayAreaSize(&xSize, &ySize);
+        if (!pVR->GetPlayAreaSize(xSize, ySize))
+        {
+	        ySize = 2.0f; //assuming 2 meter deep area if no chaperone
+        }
 
         auto faceTranslationMatrix = cMath::MatrixTranslate(cVector3f(0.0f, 1.35f, -ySize / 2.0f + 0.25f));
         uiViewMat = cMath::MatrixMul(faceTranslationMatrix, uiViewMat);
@@ -793,21 +815,8 @@ namespace hpl {
       llg->SetVREnabled(false);
 		}
 
-    {
-      vr::Texture_t leftEyeTexture = { (void*)mpGraphics->GetRenderer3D()->leftEyeDesc.m_nRenderTextureId, vr::API_OpenGL, vr::ColorSpace_Gamma };
-      vr::EVRCompositorError err = vr::VRCompositor()->Submit(vr::Eye_Left, &leftEyeTexture);
-
-      if (err)
-        LogCompositorError(err);
-    }
-
-    {
-      vr::Texture_t rightEyeTexture = { (void*)mpGraphics->GetRenderer3D()->rightEyeDesc.m_nRenderTextureId, vr::API_OpenGL, vr::ColorSpace_Gamma };
-      vr::EVRCompositorError err = vr::VRCompositor()->Submit(vr::Eye_Right, &rightEyeTexture);
-
-      if (err)
-        LogCompositorError(err);
-    }
+    	pVR->SubmitEye(eVREye_Left, mpGraphics->GetRenderer3D()->leftEyeDesc.m_nRenderTextureId);
+		pVR->SubmitEye(eVREye_Right, mpGraphics->GetRenderer3D()->rightEyeDesc.m_nRenderTextureId);
 		
 		apUpdater->OnPostGUIDraw();
 
