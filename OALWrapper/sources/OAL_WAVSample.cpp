@@ -18,6 +18,12 @@
 #include "OALWrapper/OAL_Helper.h"
 #include "OALWrapper/OAL_Device.h"
 
+// Pull in for OAL Types
+#include <ogg/ogg.h>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+
 //------------------------------------------------------------------
 
 ///////////////////////////////////////////////////////////
@@ -29,67 +35,163 @@
 
 bool cOAL_WAVSample::CreateFromFile(const wstring &asFilename)
 {
-	DEF_FUNC_NAME("cOAL_WAVSample::Load()");
-	FUNC_USES_AL;
-	
 	if(mbStatus==false)
 		return false;
 
 	Reset();
 
-	ALenum	status;
-	ALvoid	*pPCMBuffer = NULL;
-	ALsizei	lSize;
+	FILE *fileHandle = fopen(WString2String(asFilename).c_str(), "rb");
+	fseek(fileHandle, 0, SEEK_END);
+	size_t pos = ftell(fileHandle);
+	fseek(fileHandle, 0, SEEK_SET);
 
-	msFilename = asFilename;
+	void *buffer = malloc(pos);
 
-	// TEMP: Need to get rid of the ALUT funcs to use Unicode here :S
-	string sFilename = WString2String(asFilename);
-	///////////////////////////////////////////////////////////////
-	// This worked indeed, but didnt return a freeable pointer. 
-	// Will be used when some fix is found
-	//pPCMBuffer = alutLoadMemoryFromFile ( asFilename.c_str(), &eFormat, &lDataSize, &fFrequency );
-	
-	#if defined(__APPLE__)
-	alutLoadWAVFile ( (ALbyte*) sFilename.c_str(), &mFormat, &pPCMBuffer, &lSize, &mlFrequency);
-	#else
-	alutLoadWAVFile ( (ALbyte*) sFilename.c_str(), &mFormat, &pPCMBuffer, &lSize, &mlFrequency, AL_FALSE);
-	#endif
-	status = alutGetError ();
-	switch (status)
+	fread(buffer, pos, 1, fileHandle);
+	fclose(fileHandle);
+	bool result = CreateFromBuffer(buffer, pos);
+	free(buffer);
+
+	return result;
+}
+
+struct RIFF_Header {
+	char chunkID[4];
+	ogg_int32_t chunkSize;
+	char format[4];
+};
+
+struct WAVE_Format {
+	char subChunkID[4];
+	ogg_int32_t subChunkSize;
+	ogg_int16_t audioFormat;
+	ogg_int16_t numChannels;
+	ogg_int32_t sampleRate;
+	ogg_int32_t byteRate;
+	ogg_int16_t blockAlign;
+	ogg_int16_t bitsPerSample;
+};
+
+struct WAVE_Data {
+  char subChunkID[4]; //should contain the word data
+  ogg_int32_t subChunkSize; //Stores the size of the data block
+};
+
+struct RIFF_SubChunk {
+  char subChunkID[4]; //should contain the word data
+  ogg_int32_t subChunkSize; //Stores the size of the data block
+};
+
+static const char* find_chunk(const char* start, const char* end, const char* chunkID)
+{
+	RIFF_SubChunk chunk;
+	const char* ptr = start;
+	while (ptr < (end - sizeof(RIFF_SubChunk)))
 	{
-		case ALUT_ERROR_NO_ERROR:
-			break;
-        default:
-			mbStatus = false;
-			break;
+		memcpy(&chunk, ptr, sizeof(RIFF_SubChunk));
+
+		if (chunk.subChunkID[0] == chunkID[0] &&
+			chunk.subChunkID[1] == chunkID[1] &&
+			chunk.subChunkID[2] == chunkID[2] &&
+			chunk.subChunkID[3] == chunkID[3])
+		{
+			return ptr;
+		}
+		ptr += sizeof(RIFF_SubChunk) + chunk.subChunkSize;
 	}
+	return 0;
+}
 
-	cOAL_Buffer* pBuffer = mvBuffers.front();
-	if(pBuffer->Feed(pPCMBuffer, lSize)==false)
+template<typename T>
+inline const char*readStruct(T& dest, const char*& ptr)
+{
+	const char* ret;
+	memcpy(&dest, ptr, sizeof(T));
+	ptr += sizeof(RIFF_SubChunk);
+	ret = ptr;
+	ptr += dest.subChunkSize;
+	return ret;
+}
+
+bool cOAL_WAVSample::CreateFromBuffer(const void* apBuffer, size_t aSize)
+{
+	const char* start = (const char*)apBuffer;
+	const char* end = start + aSize;
+	const char* ptr = start;
+	RIFF_Header riff_header;
+	WAVE_Format wave_format;
+	WAVE_Data wave_data;
+
+	memcpy(&riff_header, ptr, sizeof(RIFF_Header));
+	ptr += sizeof(RIFF_Header);
+
+	if (riff_header.chunkID[0] != 'R' ||
+		riff_header.chunkID[1] != 'I' ||
+		riff_header.chunkID[2] != 'F' ||
+		riff_header.chunkID[3] != 'F' ||
+		riff_header.format[0] != 'W' ||
+		riff_header.format[1] != 'A' ||
+		riff_header.format[2] != 'V' ||
+		riff_header.format[3] != 'E')
 	{
-		mlBuffersUsed = 1;
-		//free( pPCMBuffer );
-		alutUnloadWAV( mFormat, pPCMBuffer, lSize, mlFrequency);
-		status = alutGetError();
-		mbStatus = false;
 		return false;
 	}
 
-	RUN_AL_FUNC(alGetBufferi( pBuffer->GetObjectID(), AL_CHANNELS, &mlChannels ));
-	
-	mlSamples = lSize/(mlChannels*GetBytesPerSample());
+	ptr = find_chunk(ptr, end, "fmt ");
+	if (!ptr) {
+		return false;
+	}
+	readStruct(wave_format, ptr);
 
-	mfTotalTime = ((double)mlSamples)/mlFrequency;
-	
-	
-//	free( pPCMBuffer );
-	alutUnloadWAV( mFormat, pPCMBuffer, lSize, mlFrequency);
-	status = alutGetError ();
+	if (wave_format.audioFormat != 1) {
+		return false;
+	}
+
+	ptr = find_chunk(ptr, end, "data");
+	if (!ptr) {
+		return false;
+	}
+
+	const char* base = readStruct(wave_data, ptr);
+
+	size_t size = wave_data.subChunkSize;
+	if (size > (end - base)) {
+		return false;
+	}
+
+	mlChannels = wave_format.numChannels;
+	if (mlChannels == 2)
+	{
+		if (wave_format.bitsPerSample == 8)
+		{
+			mFormat = AL_FORMAT_STEREO8;
+			mlSamples = size / 2;
+		}
+		else //if (wave_format.bitsPerSample == 16)
+		{
+			mlSamples = size / 4;
+			mFormat = AL_FORMAT_STEREO16;
+		}
+	} else //if (mlChannels == 1)
+	{
+		if (wave_format.bitsPerSample == 8)
+		{
+			mlSamples = size;
+			mFormat = AL_FORMAT_MONO8;
+		}
+		else //if (wave_format.bitsPerSample == 16)
+		{
+			mlSamples = size / 2;
+			mFormat = AL_FORMAT_MONO16;
+		}
+	}
+	mlFrequency = wave_format.sampleRate;
+	mfTotalTime = float(mlSamples) / float(mlFrequency);
+
+	cOAL_Buffer* pBuffer = mvBuffers[0];
+	mbStatus = pBuffer->Feed((ALvoid*)base, size);
 
 	return true;
 }
 
 //------------------------------------------------------------------
-
-
