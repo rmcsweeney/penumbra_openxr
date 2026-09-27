@@ -35,7 +35,32 @@
 #include "system/LowLevelSystem.h"
 #include "game/LowLevelGameSetup.h"
 
+#include "vr/VRBackendNull.h"
+#if HPL_VR_OPENVR
+#include "vr/VRBackendOpenVR.h"
+#endif
+
+
 namespace hpl {
+
+	// VR Initializer (new)
+	static iVRBackend* CreateVRBackend(bool abWantVR)
+	{
+#if HPL_VR_OPENVR
+		if (abWantVR) {
+			iVRBackend* pVR = hplNew(cVRBackendOpenVR, ());
+			if (pVR->Init())
+			{
+				return pVR;
+			}
+			hplDelete(pVR);
+			Warning("Unable to start OpenVR; running without VR\n");
+		}
+#endif
+		auto* pNull = hplNew(cVRBackendNull, ());
+		pNull->Init();
+		return pNull;
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// FPS COUNTER
@@ -169,6 +194,20 @@ namespace hpl {
 	}
 
 	//-----------------------------------------------------------------------
+	//VR Helper
+
+	static void UpdateVRHand(TrackedController &aHand, const cVRPose &aPose, const cMatrixf &aHeightAdd)
+	{
+		if (!aPose.valid)
+		{
+			return;
+		}
+		aHand.SetMatrix(cMath::MatrixMul(aHeightAdd, aPose.mtx));
+		aHand.SetVelocity(aPose.velocity);
+		aHand.SetAngularVelocity(aPose.angularVelocity);
+	}
+
+	//-----------------------------------------------------------------------
 
 	void cGame::GameInit(iLowLevelGameSetup *apGameSetup, cSetupVarContainer &aVars)
 	{
@@ -206,7 +245,7 @@ namespace hpl {
 #ifdef INCLUDE_HAPTIC
 		mpHaptic = mpGameSetup->CreateHaptic();
 #else
-		mpHaptic = NULL;
+		mpHaptic = nullptr;
 #endif
 
 
@@ -228,15 +267,17 @@ namespace hpl {
 			aVars.GetString("WindowCaption"),
 			mpResources);
 
-    //Init vr
-    vr::EVRInitError eError = vr::VRInitError_None;
-    vr_hmd = vr::VR_Init(&eError, vr::VRApplication_Scene);
-    
-    if (eError != vr::VRInitError_None) {
-      FatalError("Unable to init OpenVR runtime:\n%s", vr::VR_GetVRInitErrorAsEnglishDescription(eError));
-    }
+		//Init VR
 
-    mpGraphics->GetRenderer3D()->CreateVREyeTextures(vr_hmd);
+		mpVR = CreateVRBackend(aVars.GetBool("UseVR",false));
+		vr_left_hand.SetHand(eVRHand_Left);
+		vr_right_hand.SetHand(eVRHand_Right);
+		if (mpVR->IsActive())
+		{
+			int w, h;
+			mpVR->GetEyeSize(w, h);
+			mpGraphics->GetRenderer3D()->CreateVREyeTextures(w, h);
+		}
 
 		//Init Sound
 		mpSound->Init(mpResources, aVars.GetBool("UseSoundHardware",true), 
@@ -314,6 +355,12 @@ namespace hpl {
 	cGame::~cGame()
 	{
 		Log("--------------------------------------------------------\n\n");
+		if (mpVR)
+		{
+			mpVR->Shutdown();
+			hplDelete(mpVR);
+			mpVR = nullptr;
+		}
 
 		hplDelete(mpLogicTimer);
 		hplDelete(mpFPSCounter);
@@ -378,7 +425,12 @@ namespace hpl {
 		
 		//cMemoryManager::SetLogCreation(true);
 
-    SetUpdatesPerSec(90);
+		//locked to 90Hz in VR mode--revisit this later
+	if (mpVR->IsActive())
+	{
+		SetUpdatesPerSec(90);
+	}
+
 
 		while(!mbGameIsDone)
 		{
@@ -389,78 +441,23 @@ namespace hpl {
 
 			//while(mpLogicTimer->WantUpdate() && !mbGameIsDone)
 
-      // Get VR poses
-      {
-        vr::VRCompositor()->WaitGetPoses(vr_rTrackedDevicePose, vr::k_unMaxTrackedDeviceCount, NULL, 0);
-        static cMatrixf heightAdd = cMath::MatrixTranslate(cVector3f(0.0f, 0.02f, 0.0f));
 
-        for (int nDevice = 0; nDevice < vr::k_unMaxTrackedDeviceCount; ++nDevice) {
-          if (vr_rTrackedDevicePose[nDevice].bPoseIsValid) {
-            auto pose_mat = vr_rTrackedDevicePose[nDevice].mDeviceToAbsoluteTracking;
-            auto pose_velocity = vr_rTrackedDevicePose[nDevice].vVelocity;
-            auto pose_angular_velocity = vr_rTrackedDevicePose[nDevice].vAngularVelocity;
 
-            switch (vr_hmd->GetTrackedDeviceClass(nDevice)) {
-            case vr::TrackedDeviceClass_HMD:
-            {
-              vr_head_view_mat = cMatrixf::FromSteamVRMatrix34(pose_mat);
-              vr_head_view_mat = cMath::MatrixMul(heightAdd, vr_head_view_mat);
-              break;
-            }
+			mpVR->BeginFrame();
+			if (mpVR->IsActive())
+			{
+				static const cMatrixf heightAdd =
+					cMath::MatrixTranslate(cVector3f(0.0f, 0.02f, 0.0f));
+				cVRPose head = mpVR->GetHeadPose();
+				if (head.valid)
+				{
+					vr_head_view_mat = cMath::MatrixMul(heightAdd, head.mtx);
+				}
 
-            case vr::TrackedDeviceClass_Controller:
-            {
-              if (nDevice == vr::VRSystem()->GetTrackedDeviceIndexForControllerRole(vr::ETrackedControllerRole::TrackedControllerRole_RightHand)) {
-                vr_right_hand.SetMatrix(cMath::MatrixMul(heightAdd, cMatrixf::FromSteamVRMatrix34(pose_mat)));
-                vr_right_hand.SetVelocity(cVector3f(pose_velocity.v[0], pose_velocity.v[1], pose_velocity.v[2]));
-                vr_right_hand.SetAngularVelocity(cVector3f(pose_angular_velocity.v[0], pose_angular_velocity.v[1], pose_angular_velocity.v[2]));
-                vr_right_hand.SetDeviceIndex(nDevice);
-              }
-              else if (nDevice == vr::VRSystem()->GetTrackedDeviceIndexForControllerRole(vr::ETrackedControllerRole::TrackedControllerRole_LeftHand)) {
-                vr_left_hand.SetMatrix(cMath::MatrixMul(heightAdd, cMatrixf::FromSteamVRMatrix34(pose_mat)));
-                vr_left_hand.SetVelocity(cVector3f(pose_velocity.v[0], pose_velocity.v[1], pose_velocity.v[2]));
-                vr_left_hand.SetAngularVelocity(cVector3f(pose_angular_velocity.v[0], pose_angular_velocity.v[1], pose_angular_velocity.v[2]));
-                vr_left_hand.SetDeviceIndex(nDevice);
-              }
+				UpdateVRHand(vr_left_hand, mpVR->GetHandPose(eVRHand_Left), heightAdd);
+				UpdateVRHand(vr_right_hand, mpVR->GetHandPose(eVRHand_Right), heightAdd);
+			}
 
-              break;
-            }
-            }
-          }
-        }
-
-        // Process SteamVR events
-        vr::VREvent_t event;
-        while (vr_hmd->PollNextEvent(&event, sizeof(event))) {
-          switch (event.eventType) {
-          case vr::VREvent_TrackedDeviceActivated:
-          {
-            Log("Device %u attached.\n", event.trackedDeviceIndex);
-          }
-          break;
-          case vr::VREvent_TrackedDeviceDeactivated:
-          {
-            Log("Device %u detached.\n", event.trackedDeviceIndex);
-          }
-          break;
-          case vr::VREvent_TrackedDeviceUpdated:
-          {
-            Log("Device %u updated.\n", event.trackedDeviceIndex);
-          }
-          break;
-          }
-        }
-
-        // Process SteamVR controller state
-        for (vr::TrackedDeviceIndex_t unDevice = 0; unDevice < vr::k_unMaxTrackedDeviceCount; unDevice++)
-        {
-          vr::VRControllerState_t state;
-          if (vr_hmd->GetControllerState(unDevice, &state))
-          {
-            // do wut wit dis
-          }
-        }
-      }
 
       //if (!mbGameIsDone)
       while (mpLogicTimer->WantUpdate() && !mbGameIsDone)
