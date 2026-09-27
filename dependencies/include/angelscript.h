@@ -1,6 +1,6 @@
 /*
    AngelCode Scripting Library
-   Copyright (c) 2003-2006 Andreas Jönsson
+   Copyright (c) 2003-2006 Andreas Jï¿½nsson
 
    This software is provided 'as-is', without any express or implied
    warranty. In no event will the authors be held liable for any
@@ -24,7 +24,7 @@
    The original version of this library can be located at:
    http://www.angelcode.com/angelscript/
 
-   Andreas Jönsson
+   Andreas Jï¿½nsson
    andreas@angelcode.com
 */
 
@@ -781,7 +781,7 @@ struct asSMethodPtr
 		// This version of the function should never be executed, nor compiled,
 		// as it would mean that the size of the method pointer cannot be determined.
 		// int ERROR_UnsupportedMethodPtr[-1];
-		return 0;
+		return asUPtr();
 	}
 };
 
