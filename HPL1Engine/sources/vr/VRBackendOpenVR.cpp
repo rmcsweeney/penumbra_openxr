@@ -190,4 +190,16 @@ namespace hpl
 		};
 		LogCompositorError(vr::VRCompositor()->Submit(ToOpenVREye(aEye), &tex));
 	}
+
+	bool cVRBackendOpenVR::GetPlayAreaSize(float &afWidth, float &afDepth) const
+	{
+		afWidth = 0;
+		afDepth = 0;
+		if (!mpHMD || vr::VRChaperone() == nullptr)
+		{
+			return false;
+		}
+		vr::VRChaperone()->GetPlayAreaSize(&afWidth, &afDepth);
+		return true;
+	}
 }

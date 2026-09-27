@@ -36,6 +36,8 @@ namespace hpl
 		cVREyeView GetEyeView(eVREye aEye) const override;
 		void SubmitEye(eVREye aEye, unsigned int alGLTexture) override;
 
+		bool GetPlayAreaSize(float &afWidth, float &afDepth) const override;
+
 	private:
 		void ReadButtons(unsigned int alDevice, cVRButtonState &aOut);
 

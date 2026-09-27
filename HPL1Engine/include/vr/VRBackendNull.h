@@ -27,6 +27,8 @@ namespace hpl
 		void GetEyeSize(int& w, int& h) const override { w = 0; h = 0; };
 		cVREyeView GetEyeView(eVREye aEye) const override { return cVREyeView(); };
 		void SubmitEye(eVREye aEye, unsigned int alGLTexture) override {};
+
+		bool GetPlayAreaSize(float &w, float &d) const override { w = 0; d = 0; return false; }
 	};
 }
 

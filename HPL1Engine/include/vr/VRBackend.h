@@ -32,6 +32,8 @@ namespace hpl
 		virtual void GetEyeSize(int &alWidth, int &alHeight) const = 0;
 		virtual cVREyeView GetEyeView(eVREye aEye) const = 0;
 		virtual void SubmitEye(eVREye aEye, unsigned int alGLTexture) = 0;
+
+		virtual bool GetPlayAreaSize(float &afWidth, float &afDepth) const = 0;
 	};
 
 
