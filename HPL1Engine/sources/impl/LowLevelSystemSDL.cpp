@@ -19,6 +19,7 @@
 //#include <vld.h>
 //Use this to check for memory leaks!
 
+#include <iostream>
 #ifdef WIN32
 #pragma comment(lib, "angelscript.lib")
 #define UNICODE
@@ -28,8 +29,6 @@
 
 #ifndef WIN32
 #include <unistd.h>
-// Include FLTK 
-#include "FL/fl_ask.H"
 #endif
 
 #define _UNICODE
@@ -450,7 +449,8 @@ namespace hpl {
 		sMess += asCaption;
 		sMess +=_W("\n\n");
 		sMess += text;
-		fl_alert("%ls\n\n%ls",asCaption,text);
+		//TODO: was fl_alert from fltk, migrate to SDL_ShowSimpleMessageBox
+		std::cerr << text << std::endl;
 		#endif
 	}
 
