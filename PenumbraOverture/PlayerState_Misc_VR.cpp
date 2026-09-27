@@ -1396,7 +1396,7 @@ void cPlayerState_Climb_VR::EnterState(iPlayerState* apPrevState)
   PlaySound(mpLadder->GetAttachSound());
 
   // For VR
-  ladderSoundsLeft = max(2, (fabs(mpLadder->GetMaxY() - mpLadder->GetMinY()) / 1.2f));
+  ladderSoundsLeft = (int)std::max(2.0f, (fabs(mpLadder->GetMaxY() - mpLadder->GetMinY()) / 1.2f));
   ladderSoundCount = LADDER_SOUND_SPACING;
 
   // Figure out if player is moving down or up ladder

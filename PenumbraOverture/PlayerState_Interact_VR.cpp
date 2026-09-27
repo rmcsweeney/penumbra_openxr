@@ -431,8 +431,8 @@ void cPlayerState_Grab_VR::LeaveState(iPlayerState* apNextState)
   auto destTranslation = destMatrix.GetTranslation();
   auto destRotation = destMatrix.GetRotation();
 
-  auto firstFrame = max(min(mlThrowHistoryCnt, 2) - 1, 0);
-  auto lastFrame = min(mlThrowHistoryCnt, 9);
+  auto firstFrame = std::max(std::min(mlThrowHistoryCnt, 2) - 1, 0);
+  auto lastFrame = std::min(mlThrowHistoryCnt, 9);
 
   mpPushBody->SetLinearVelocity(mpInit->mpGame->vr_right_hand.GetVelocity());
   mpPushBody->SetAngularVelocity(mpInit->mpGame->vr_right_hand.GetAngularVelocity() * 0.5f);

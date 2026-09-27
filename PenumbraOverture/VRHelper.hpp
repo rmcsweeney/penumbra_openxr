@@ -1,6 +1,5 @@
 #pragma once
 
-#include "openvr.h"
 #include "math/Math.h"
 #include "game/Game.h"
 #include "scene/Scene.h"
