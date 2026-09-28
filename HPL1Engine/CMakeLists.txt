@@ -27,7 +27,7 @@ target_include_directories(HPL PUBLIC
 )
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
-target_link_libraries(HPL PUBLIC OALWrapper GLEW::GLEW OpenGL::GL OpenGL::GLU)
+target_link_libraries(HPL PUBLIC OALWrapper angelscript GLEW::GLEW OpenGL::GL OpenGL::GLU)
 
 if (VR_BACKEND STREQUAL "OPENVR")
     target_sources(HPL PRIVATE sources/vr/VRBackendOpenVR.cpp)
@@ -38,7 +38,3 @@ endif ()
 # TODO: here be 32 bit prebuilts
 add_library(Newton STATIC IMPORTED)
 set_target_properties(Newton PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/lib/linux/libNewton.a)
-
-add_library(angelscript STATIC IMPORTED)
-set_target_properties(angelscript PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/lib/linux/libangelscript.a)
-

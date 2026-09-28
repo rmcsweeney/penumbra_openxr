@@ -10,4 +10,4 @@ set_target_properties(Overture PROPERTIES
     OUTPUT_NAME overture
     SUFFIX .bin)
 
-target_link_libraries(Overture PRIVATE HPL OALWrapper Newton angelscript Cg CgGL ogg vorbis vorbisfile openal SDL SDL_ttf SDL_image)
+target_link_libraries(Overture PRIVATE HPL OALWrapper Newton Cg CgGL ogg vorbis vorbisfile openal SDL SDL_ttf SDL_image)
