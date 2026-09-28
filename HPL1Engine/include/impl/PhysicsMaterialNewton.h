@@ -56,10 +56,8 @@ namespace hpl {
 		float Combine(ePhysicsMaterialCombMode aMode, float afX, float afY);
 
 		static int BeginContactCallback(const NewtonMaterial* material,
-										const NewtonBody* apBody1, const NewtonBody* apBody2);
-		static int ProcessContactCallback(const NewtonMaterial* apMaterial,
-											const NewtonContact* apContact);
-		static void EndContactCallback(const NewtonMaterial* apMaterial);
+										const NewtonBody* apBody1, const NewtonBody* apBody2, int);
+		static void ProcessContactCallback(const NewtonJoint *joint, float, int);
 
         static iPhysicsBody *mpContactBody1;
 		static iPhysicsBody *mpContactBody2;

@@ -16,6 +16,7 @@ option(USE_SDL12 "Use SDL 1.2 API via sdl12-compat" ON)
 
 add_subdirectory(OALWrapper)
 add_subdirectory(third-party/angelscript)
+add_subdirectory(third-party/newton)
 add_subdirectory(HPL1Engine)
 add_subdirectory(PenumbraOverture)
 

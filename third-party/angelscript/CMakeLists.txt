@@ -1,4 +1,3 @@
-# third_party/angelscript/CMakeLists.txt
 file(GLOB as_sources CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp)
 
 add_library(angelscript STATIC
@@ -10,7 +9,7 @@ add_library(angelscript STATIC
 )
 
 target_include_directories(angelscript PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include   # <angelscript.h>
-        ${CMAKE_CURRENT_SOURCE_DIR}/add_on    # <scriptstdstring/scriptstdstring.h> etc.
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/add_on
 )
 target_compile_definitions(angelscript PUBLIC AS_MAX_PORTABILITY)
