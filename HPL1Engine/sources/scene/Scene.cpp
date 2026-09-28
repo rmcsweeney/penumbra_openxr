@@ -20,6 +20,9 @@
 #include "math/Math.h"
 
 #include "scene/Scene.h"
+
+#include <GL/glew.h>
+
 #include "game/Updater.h"
 #include "system/LowLevelSystem.h"
 
@@ -48,7 +51,6 @@
 
 #include "game/Game.h"
 #include "vr/VRBackend.h"
-#include "GL/GLee.h"
 
 namespace hpl {
 

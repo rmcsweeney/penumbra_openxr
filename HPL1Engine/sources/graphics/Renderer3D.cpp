@@ -39,7 +39,7 @@
 #include "graphics/GPUProgram.h"
 #include "graphics/RendererPostEffects.h"
 
-#include "GL/GLee.h"
+#include <GL/glew.h>
 
 namespace hpl {
 	//////////////////////////////////////////////////////////////////////////

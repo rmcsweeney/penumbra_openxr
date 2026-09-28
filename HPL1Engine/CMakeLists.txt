@@ -19,13 +19,15 @@ file(GLOB_RECURSE all_headers CONFIGURE_DEPENDS
 add_library(HPL STATIC ${all_sources} ${all_headers})
 
 #temp include to fix GLee issue of glx.h including new versions, this uses GLee 5.4
-target_compile_definitions(HPL PUBLIC GL_GLEXT_LEGACY GLX_GLXEXT_LEGACY)
+#target_compile_definitions(HPL PUBLIC GL_GLEXT_LEGACY GLX_GLXEXT_LEGACY)
 
 target_include_directories(HPL PUBLIC
 		${CMAKE_CURRENT_SOURCE_DIR}/include
 		${CMAKE_CURRENT_SOURCE_DIR}/../dependencies/include
 )
-target_link_libraries(HPL PUBLIC OALWrapper)
+find_package(OpenGL REQUIRED)
+find_package(GLEW REQUIRED)
+target_link_libraries(HPL PUBLIC OALWrapper GLEW::GLEW OpenGL::GL OpenGL::GLU)
 
 if (VR_BACKEND STREQUAL "OPENVR")
     target_sources(HPL PRIVATE sources/vr/VRBackendOpenVR.cpp)

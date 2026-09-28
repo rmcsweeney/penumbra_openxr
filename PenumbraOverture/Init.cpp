@@ -130,6 +130,7 @@ bool CheckSupport(cInit *apInit)
 		return false;
 	}
 	Log("Checking Supported Profiles\n");
+#if USE_CG
 	#define CG_CHECK(p) if (cgGLIsProfileSupported(p)) Log("  Profile " #p " is supported\n")
 	CG_CHECK(CG_PROFILE_VP20);
 	CG_CHECK(CG_PROFILE_FP20);
@@ -147,6 +148,7 @@ bool CheckSupport(cInit *apInit)
 	CG_CHECK(CG_PROFILE_GLSLF);
 	CG_CHECK(CG_PROFILE_GLSLC);
 	#undef CG_CHECK
+#endif
 
 	//Try compiling vertex shader
 	Log("Trying to load vertex program!\n");
