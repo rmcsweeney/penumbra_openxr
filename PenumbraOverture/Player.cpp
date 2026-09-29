@@ -946,14 +946,16 @@ void cPlayer::StopRun()
 
 void cPlayer::StartCrouch()
 {
-	// mvStates[mState]->OnStartCrouch();
+	if (!mpInit->mpGame->mpVR->IsActive())
+		mvStates[mState]->OnStartCrouch();
 }
 
 //-----------------------------------------------------------------------
 
 void cPlayer::StopCrouch()
 {
-	// mvStates[mState]->OnStopCrouch();
+	if (!mpInit->mpGame->mpVR->IsActive())
+		mvStates[mState]->OnStopCrouch();
 }
 
 //-----------------------------------------------------------------------

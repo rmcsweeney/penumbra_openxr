@@ -83,7 +83,8 @@ namespace hpl {
 
 		bool CheckShapeCollision(	iCollideShape* apShapeA, const cMatrixf& a_mtxA,
 						iCollideShape* apShapeB, const cMatrixf& a_mtxB,
-						cCollideData & aCollideData, int alMaxPoints=4);
+						cCollideData & aCollideData, int alMaxPoints=4,
+						bool correctNormalDirection = false);
 
     bool CheckShapeWorldSweep(cVector3f *apNewPos,
             iCollideShape* apShape, const cMatrixf& a_mtxTransform,
