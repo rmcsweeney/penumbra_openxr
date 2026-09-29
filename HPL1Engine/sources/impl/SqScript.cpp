@@ -23,6 +23,8 @@
 #include "impl/Platform.h"
 #include <stdio.h>
 
+#include "scripthelper/scripthelper.h"
+
 namespace hpl {
 
 	//////////////////////////////////////////////////////////////////////////
@@ -49,7 +51,7 @@ namespace hpl {
 
 	cSqScript::~cSqScript()
 	{
-		mpScriptEngine->Discard(msModuleName.c_str());
+		if (mpModule) mpModule->Discard();
 		mpContext->Release();
 	}
 
@@ -69,15 +71,16 @@ namespace hpl {
 			Error("Couldn't load script '%s'!\n",asFileName.c_str());
 			return false;
 		}
-
-		if(mpScriptEngine->AddScriptSection(msModuleName.c_str(), "main", pCharBuffer, lLength)<0)
-		{
-			Error("Couldn't add script '%s'!\n",asFileName.c_str());
+		//angelscript new api usage from scummvm's code--get a module from engine instead
+		// of calling directly from engine
+		mpModule = mpScriptEngine->GetModule(msModuleName.c_str(), asGM_ALWAYS_CREATE);
+		if (mpModule->AddScriptSection(msModuleName.c_str(), pCharBuffer, lLength) < 0) {
+			Error("Couldn't add script '%s'!\n", asFileName.c_str());
 			hplDeleteArray(pCharBuffer);
 			return false;
 		}
 
-		if(mpScriptEngine->Build(msModuleName.c_str())<0)
+		if(mpModule->Build()<0)
 		{
 			Error("Couldn't build script '%s'!\n",asFileName.c_str());
 			Log("------- SCRIPT OUTPUT BEGIN --------------------------\n");
@@ -86,7 +89,7 @@ namespace hpl {
 			Log("------- SCRIPT OUTPUT END ----------------------------\n");
 
 
-			
+
 			hplDeleteArray(pCharBuffer);
 			return false;
 		}
@@ -100,7 +103,10 @@ namespace hpl {
 
 	int cSqScript::GetFuncHandle(const tString& asFunc)
 	{
-		return mpScriptEngine->GetFunctionIDByName(msModuleName.c_str(),asFunc.c_str());
+		if (mpModule == nullptr) { return -1; }
+		asIScriptFunction *script =
+			mpModule->GetFunctionByName(asFunc.c_str());
+		return script ? script->GetId() : -1;
 	}
 
 	//-----------------------------------------------------------------------
@@ -114,22 +120,21 @@ namespace hpl {
 
 	bool cSqScript::Run(const tString& asFuncLine)
 	{
-		mpScriptEngine->ExecuteString(msModuleName.c_str(), asFuncLine.c_str());
-
-		return true;
+		if (mpModule == nullptr){ return false;}
+		return ExecuteString(mpScriptEngine, asFuncLine.c_str(), mpModule);
 	}
 
 	//-----------------------------------------------------------------------
 
 	bool cSqScript::Run(int alHandle)
 	{
-		mpContext->Prepare(alHandle);
+		auto script = mpScriptEngine->GetFunctionById(alHandle);
+		if (script == nullptr){ return false; }
+		if (mpContext->Prepare(script) < 0) return false;
 
 		/* Set all the args here */
 
-		mpContext->Execute();
-
-		return true;
+		return mpContext->Execute() == asEXECUTION_FINISHED;
 	}
 
 	//-----------------------------------------------------------------------

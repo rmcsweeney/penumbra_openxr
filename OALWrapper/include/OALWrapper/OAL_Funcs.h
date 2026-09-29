@@ -19,7 +19,6 @@
 #ifdef WIN32
 #pragma comment(lib, "libvorbis.lib")
 #pragma comment(lib, "libvorbisfile.lib")
-#pragma comment(lib, "alut.lib")
 #pragma comment(lib, "openal32.lib")
 #pragma comment(lib, "SDL.lib")
 #endif

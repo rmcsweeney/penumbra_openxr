@@ -1,48 +1,18 @@
-#pragma once
-
-#pragma once
+#ifndef HPL_TRACKED_CONTROLLER_H
+#define HPL_TRACKED_CONTROLLER_H
 
 #include "math/Math.h"
-#include "openvr.h"
+#include "vr/VRBackend.h"
 
 namespace hpl {
   class TrackedController {
   public:
-    struct ButtonState {
-      ButtonState(bool valid) {
-        valid_ = valid;
-      };
-
-      float touchX;
-      float touchY;
-
-      bool touchContact;
-      bool touchJustContacted;
-      bool touchJustReleased;
-
-      bool padPressed;
-      bool padJustPressed;
-      bool padJustReleased;
-
-      bool gripPressed;
-      bool gripJustPressed;
-      bool gripJustReleased;
-
-      float triggerMargin;
-
-      bool triggerPressed;
-      bool triggerJustPressed;
-      bool triggerJustReleased;
-
-      bool menuPressed;
-      bool menuJustPressed;
-      bool menuJustReleased;
-
-      bool valid_;
-    };
+  	typedef cVRButtonState ButtonState;
 
     TrackedController();
     ~TrackedController();
+
+  	void SetHand(eVRHand aHand);
 
     void SetMatrix(const cMatrixf& matrix);
     cMatrixf GetLastMatrix();
@@ -54,18 +24,17 @@ namespace hpl {
     void SetAngularVelocity(const cVector3f& angular_velocity);
     cVector3f GetAngularVelocity();
 
-    void SetDeviceIndex(vr::TrackedDeviceIndex_t device_index);
 
     void UpdateButtonState();
     ButtonState GetButtonState();
 
   private:
-    uint32_t last_packet_;
+  	eVRHand hand_;
     ButtonState button_state_;
-    vr::TrackedDeviceIndex_t device_index_;
     cMatrixf last_matrix_;
     cMatrixf matrix_;
     cVector3f velocity_;
     cVector3f angular_velocity_;
   };
 }
+#endif

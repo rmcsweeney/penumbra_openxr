@@ -946,14 +946,16 @@ void cPlayer::StopRun()
 
 void cPlayer::StartCrouch()
 {
-	// mvStates[mState]->OnStartCrouch();
+	if (!mpInit->mpGame->mpVR->IsActive())
+		mvStates[mState]->OnStartCrouch();
 }
 
 //-----------------------------------------------------------------------
 
 void cPlayer::StopCrouch()
 {
-	// mvStates[mState]->OnStopCrouch();
+	if (!mpInit->mpGame->mpVR->IsActive())
+		mvStates[mState]->OnStopCrouch();
 }
 
 //-----------------------------------------------------------------------
@@ -1027,9 +1029,17 @@ void cPlayer::OnWorldLoad()
 {	
 	/////////////////////////////////////////////////////////
 	// Create body
-	// mpCharBody = mpScene->GetWorld3D()->GetPhysicsWorld()->CreateCharacterBody("Player", mvSize);
-  mpCharBody = mpScene->GetWorld3D()->GetPhysicsWorld()->CreateCharacterBody("Player", cVector3f(mvSize.x * 0.5, 0.85f, mvSize.z * 0.5));
-	
+	//
+	if (mpInit->mpGame->mpVR->IsActive())
+	{
+		mpCharBody = mpScene->GetWorld3D()->GetPhysicsWorld()->CreateCharacterBody("Player",
+			cVector3f(mvSize.x * 0.5, 0.85f, mvSize.z * 0.5));
+	}
+	else
+	{
+		mpCharBody = mpScene->GetWorld3D()->GetPhysicsWorld()->CreateCharacterBody("Player", mvSize);
+	}
+
 	mpCharBody->SetCamera(mpCamera);
 	mpCharBody->SetMass(mfMass);
 	//mpCamera->SetPosition(cVector3f(1,1.2f,-2));
@@ -1055,7 +1065,14 @@ void cPlayer::OnWorldLoad()
 	mpCharBody->SetAirFriction(mpInit->mpGameConfig->GetFloat("Player","AirFriction",0));
 	
 	//Add the crouch size
-	mpCharBody->AddExtraSize(cVector3f(mvSize.x * 0.5f, 0.85f, mvSize.z * 0.5f));
+	if (mpInit->mpGame->mpVR->IsActive())
+	{
+		mpCharBody->AddExtraSize(cVector3f(mvSize.x * 0.5f, 0.85f, mvSize.z * 0.5f));
+	}
+	else
+	{
+		mpCharBody->AddExtraSize(cVector3f(mvSize.x, mfCrouchHeight,mvSize.z));
+	}
 
 	//Set so it is not saved:
 	mpCharBody->SetIsSaved(false);
@@ -1233,13 +1250,15 @@ void cPlayer::Update(float afTimeStep)
 
   ////////////////////////////////////////
   // VR utilities
-  mpVRRightHand->Update(afTimeStep);
-  mpVRLeftHand->Update(afTimeStep);
+	if (mpInit->mpGame->mpVR->IsActive())
+	{
+		mpVRRightHand->Update(afTimeStep);
+		mpVRLeftHand->Update(afTimeStep);
 
-  mpVRTeleport->Update(afTimeStep);
+		mpVRTeleport->Update(afTimeStep);
 
-  mpVRDimmer->Update(afTimeStep);
-	
+		mpVRDimmer->Update(afTimeStep);
+	}
 	////////////////////////////////////////
 	// Look at
 	mpLookAt->Update(afTimeStep);
@@ -1413,8 +1432,9 @@ void cPlayer::Update(float afTimeStep)
 		//Log("HEadMove: %f HeightAdd %f Death: %f\n",mpHeadMove->GetPos(),mfHeightAdd,mpDeath->GetHeighAdd());
 		
 		mpCharBody->SetCameraPosAdd(cVector3f(fXAdd,fYAdd,fZAdd));
+		mpCharBody->SetVRCamera(mpInit->mpGame->mpVR->IsActive());
+
 	}
-	
 	///////////////////////////
 	//Update state
 	
@@ -1958,8 +1978,7 @@ void cPlayer::OnPostSceneDraw()
 
     auto ofs = crosshairMat->GetTextureOffset(eMaterialTexture_Diffuse);
 
-    tVertexVec vtx;
-    vtx.reserve(4);
+    tVertexVec vtx(4);
 
     cColor color(1.0f, 1.0f);
 

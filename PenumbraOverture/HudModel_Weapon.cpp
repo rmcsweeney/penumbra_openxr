@@ -18,6 +18,8 @@
  */
 #include "HudModel_Weapon.h"
 
+#include <algorithm>
+
 #include "Init.h"
 #include "Player.h"
 #include "PlayerHelper.h"

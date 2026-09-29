@@ -19,12 +19,12 @@
 #ifndef HPL_RENDERER3D_H
 #define HPL_RENDERER3D_H
 
+
 #include "graphics/GraphicsTypes.h"
 #include "math/MathTypes.h"
 #include "graphics/Material.h"
 #include "math/Frustum.h"
 
-#include "GL/GLee.h"
 
 namespace hpl {
 
@@ -69,11 +69,11 @@ namespace hpl {
 	//---------------------------------------------
   struct FramebufferDesc
   {
-    GLuint m_nDepthBufferId;
-    GLuint m_nRenderTextureId;
-    GLuint m_nRenderFramebufferId;
-    GLuint m_nResolveTextureId;
-    GLuint m_nResolveFramebufferId;
+    unsigned int m_nDepthBufferId;
+    unsigned int m_nRenderTextureId;
+    unsigned int m_nRenderFramebufferId;
+    unsigned int m_nResolveTextureId;
+    unsigned int m_nResolveFramebufferId;
   };
 
 	class cRenderSettings
@@ -199,13 +199,13 @@ namespace hpl {
 
 		void FetchOcclusionQueries();
 
-    void CreateVREyeTextures(vr::IVRSystem* vr_hmd);
+    void CreateVREyeTextures(int alWidth, int alHeight);
 
     FramebufferDesc leftEyeDesc;
     FramebufferDesc rightEyeDesc;
 
-    GLuint m_nVRRenderWidth;
-    GLuint m_nVRRenderHeight;
+    unsigned int m_nVRRenderWidth;
+    unsigned int m_nVRRenderHeight;
 	
 	private:
 		inline void BeginRendering(cCamera3D* apCamera);

@@ -19,6 +19,9 @@
 //#include <vld.h>
 //Use this to check for memory leaks!
 
+#include <iostream>
+
+#include "scriptarray/scriptarray.h"
 #ifdef WIN32
 #pragma comment(lib, "angelscript.lib")
 #define UNICODE
@@ -27,8 +30,7 @@
 #endif
 
 #ifndef WIN32
-// Include FLTK 
-#include "FL/fl_ask.H"
+#include <unistd.h>
 #endif
 
 #define _UNICODE
@@ -166,11 +168,12 @@ namespace hpl {
 		mpScriptOutput = hplNew( cScriptOutput, () );
 		mpScriptEngine->SetMessageCallback(asMETHOD(cScriptOutput,AddMessage), mpScriptOutput, asCALL_THISCALL);
 
-#ifdef AS_MAX_PORTABILITY
-		RegisterScriptString(mpScriptEngine);
+#ifdef AS_MAX_PORTABILITY //prev. RegisterScriptString with old angelscript
+		RegisterStdString(mpScriptEngine);
 #else
 		RegisterStdString(mpScriptEngine);
 #endif
+		RegisterScriptArray(mpScriptEngine, true);
 
 		mlHandleCount = 0;
 
@@ -449,7 +452,8 @@ namespace hpl {
 		sMess += asCaption;
 		sMess +=_W("\n\n");
 		sMess += text;
-		fl_alert("%ls\n\n%ls",asCaption,text);
+		//TODO: was fl_alert from fltk, migrate to SDL_ShowSimpleMessageBox
+		std::cerr << text << std::endl;
 		#endif
 	}
 

@@ -49,7 +49,7 @@ namespace hpl {
 	cPhysicsWorldNewton::cPhysicsWorldNewton()
 		: iPhysicsWorld()
 	{
-		mpNewtonWorld = NewtonCreate(NULL, NULL);
+		mpNewtonWorld = NewtonCreate();
 
 		if(mpNewtonWorld==NULL){
 			Warning("Couldn't create newton world!\n");
@@ -471,11 +471,20 @@ namespace hpl {
     return false;
   }
 
+	// Fix found in ScummVM (https://github.com/scummvm/scummvm/)--Fix found in HPL2 (https://github.com/FrictionalGames/AmnesiaTheDarkDescent)
+	static void correctNormal(cVector3f &normal, const cVector3f &collidePoint, const cVector3f &shapeCenter) {
+		cVector3f vCenterToCollidePoint = collidePoint - shapeCenter;
+		// A check if the normal points in the wrong direction.
+		if (cMath::Vector3Dot(vCenterToCollidePoint, normal) > 0)
+			normal = normal * -1;
+	}
+
   //-----------------------------------------------------------------------
 
 	bool cPhysicsWorldNewton::CheckShapeCollision(	iCollideShape* apShapeA, const cMatrixf& a_mtxA,
 										iCollideShape* apShapeB, const cMatrixf& a_mtxB,
-										cCollideData & aCollideData, int alMaxPoints)
+										cCollideData & aCollideData, int alMaxPoints,
+										bool correctNormalDirection)
 	{
 		cCollideShapeNewton *pNewtonShapeA = static_cast<cCollideShapeNewton*>(apShapeA);
 		cCollideShapeNewton *pNewtonShapeB = static_cast<cCollideShapeNewton*>(apShapeB);
@@ -508,7 +517,7 @@ namespace hpl {
 					int lNum = NewtonCollisionCollide(mpNewtonWorld, alMaxPoints,
 												pSubShapeA->GetNewtonCollision(), &(mtxTransposeA.m[0][0]),
 												pSubShapeB->GetNewtonCollision(), &(mtxTransposeB.m[0][0]),
-												mpTempPoints, mpTempNormals, mpTempDepths);
+												mpTempPoints, mpTempNormals, mpTempDepths, 0);
 					if(lNum<1) continue;
 					if(lNum > alMaxPoints )lNum = alMaxPoints;
 
@@ -533,6 +542,9 @@ namespace hpl {
 						CollPoint.mvPoint.x = mpTempPoints[lVertex+0];
 						CollPoint.mvPoint.y = mpTempPoints[lVertex+1];
 						CollPoint.mvPoint.z = mpTempPoints[lVertex+2];
+
+						if (correctNormalDirection && apShapeA->GetType() != eCollideShapeType_Mesh)
+							correctNormal(CollPoint.mvNormal, CollPoint.mvPoint, a_mtxA.GetTranslation());
 					}
 	                
 					lCollideDataStart += lNum;
@@ -552,7 +564,7 @@ namespace hpl {
 			int lNum = NewtonCollisionCollide(mpNewtonWorld, alMaxPoints,
 										pNewtonShapeA->GetNewtonCollision(), &(mtxTransposeA.m[0][0]),
 										pNewtonShapeB->GetNewtonCollision(), &(mtxTransposeB.m[0][0]),
-										mpTempPoints, mpTempNormals, mpTempDepths);
+										mpTempPoints, mpTempNormals, mpTempDepths, 0);
 			
 			if(lNum<1) return false;
 			if(lNum > alMaxPoints )lNum = alMaxPoints;
@@ -571,6 +583,9 @@ namespace hpl {
 				CollPoint.mvPoint.x = mpTempPoints[lVertex+0];
 				CollPoint.mvPoint.y = mpTempPoints[lVertex+1];
 				CollPoint.mvPoint.z = mpTempPoints[lVertex+2];
+
+				if (correctNormalDirection && apShapeA->GetType() != eCollideShapeType_Mesh)
+					correctNormal(CollPoint.mvNormal, CollPoint.mvPoint, a_mtxA.GetTranslation());
 			}
 
 			aCollideData.mlNumOfPoints = lNum;

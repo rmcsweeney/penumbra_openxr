@@ -1962,7 +1962,8 @@ void cPlayerVRHand::Update(float afTimeStep)
   {
     mpInit->mpPlayerHands->SetCurrentModel(mHandIndex, hudModelName);
   }
-
+	iHudModel *pModel = mpInit->mpPlayerHands->GetCurrentModel(mHandIndex);
+	if (!pModel) return;
   mpInit->mpPlayerHands->GetCurrentModel(mHandIndex)->SetHandIndex(mHandIndex);
 }
 
@@ -2882,7 +2883,9 @@ static float GetMaxRGB(const cColor &aCol)
 void cPlayerHidden::Update(float afTimeStep)
 {
 	iCharacterBody *pCharBody = mpInit->mpPlayer->GetCharacterBody();
-  bool bIsCrouching = mpInit->mpGame->vr_head_view_mat.GetTranslation().y < 1.5f;
+	bool bIsCrouching = mpInit->mpGame->mpVR->IsActive() ?
+		mpInit->mpGame->vr_head_view_mat.GetTranslation().y < 1.5f : //TODO: may need to change height (short player)
+		mpInit->mpPlayer->GetMoveState() == ePlayerMoveState_Crouch;
 
 	///////////////////////////////////
 	// Update Hidden effect

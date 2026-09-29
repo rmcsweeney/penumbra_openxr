@@ -1,18 +1,23 @@
 #include "input/TrackedController.h"
-#include "game\Game.h"
+
+#include "game/Game.h"
 
 using namespace hpl;
-using namespace vr;
 
 namespace hpl {
   extern cGame* gGame;
 }
 
-TrackedController::TrackedController() : device_index_(-1), button_state_(true), last_packet_(0) {
-  memset(&button_state_, 0, sizeof(ButtonState));
+TrackedController::TrackedController() : hand_(eVRHand_Right)
+{
 }
 
 TrackedController::~TrackedController() {
+}
+
+void TrackedController::SetHand(eVRHand aHand)
+{
+	hand_ = aHand;
 }
 
 void TrackedController::SetMatrix(const cMatrixf& matrix) {
@@ -43,93 +48,37 @@ cVector3f TrackedController::GetAngularVelocity() {
   return angular_velocity_;
 }
 
-void TrackedController::SetDeviceIndex(vr::TrackedDeviceIndex_t index) {
-  device_index_ = index;
-}
-
 void TrackedController::UpdateButtonState() {
-  if (device_index_ == -1) {
-    memset(&button_state_, 0, sizeof(ButtonState));
+	cVRButtonState raw;
+	if (gGame && gGame->mpVR)
+	{
+		raw = gGame->mpVR->GetButtons(hand_);
+	}
 
-    button_state_.touchX = 0.0f;
-    button_state_.touchY = 0.0f;
-    button_state_.triggerMargin = 0.0f;
+	ButtonState &s = button_state_;
 
-    return;
-  }
+	s.gripJustPressed		= raw.gripPressed		&& !s.gripJustPressed;
+	s.gripJustReleased		= !raw.gripPressed		&& s.gripPressed;
+	s.padJustPressed		= raw.padPressed		&& !s.padPressed;
+	s.padJustReleased		= !raw.padPressed		&& s.padPressed;
+	s.touchJustContacted	= raw.touchContact		&& !s.touchContact;
+	s.touchJustReleased		= !raw.touchContact		&& s.touchContact;
+	s.triggerJustPressed	= raw.triggerPressed	&& !s.triggerPressed;
+	s.triggerJustReleased	= !raw.triggerPressed	&& s.triggerPressed;
+	s.menuJustPressed		= raw.menuPressed		&& !s.menuPressed;
+	s.menuJustReleased		= !raw.menuPressed		&& s.menuPressed;
 
-  auto hmd = gGame->vr_hmd;
+	s.gripPressed = raw.gripPressed;
+	s.padPressed = raw.padPressed;
+	s.touchContact = raw.touchContact;
+	s.triggerPressed = raw.triggerPressed;
+	s.menuPressed = raw.menuPressed;
 
-  vr::VRControllerState_t state;
+	s.touchX = raw.touchX;
+	s.touchY = raw.touchY;
+	s.triggerMargin = raw.triggerMargin;
+	s.valid = raw.valid;
 
-  if (!hmd->GetControllerState(device_index_, &state)) {
-    button_state_.valid_ = false;
-    return;
-  }
-
-  button_state_.valid_ = true;
-
-  // Grip button
-  button_state_.gripJustPressed = false;
-  button_state_.gripJustReleased = false;
-
-  if (state.ulButtonPressed & (1ULL << ((int)k_EButton_Grip)))
-    button_state_.gripJustPressed = !button_state_.gripPressed;
-  else
-    button_state_.gripJustReleased = button_state_.gripPressed;
-
-  button_state_.gripPressed = (state.ulButtonPressed & (1ULL << ((int)k_EButton_Grip))) > 0;
-
-  // Pad button
-  button_state_.padJustPressed = false;
-  button_state_.padJustReleased = false;
-
-  if ((state.ulButtonPressed & (1ULL << ((int)k_EButton_SteamVR_Touchpad))) > 0)
-    button_state_.padJustPressed = !button_state_.padPressed;
-  else
-    button_state_.padJustReleased = !button_state_.padPressed;
-
-  button_state_.padPressed = (state.ulButtonPressed & (1ULL << ((int)k_EButton_SteamVR_Touchpad))) > 0;
-
-  // Pad touched
-  button_state_.touchJustContacted = false;
-  button_state_.touchJustReleased = false;
-
-  if (state.ulButtonTouched & (1ULL << ((int)k_EButton_SteamVR_Touchpad)))
-    button_state_.touchJustContacted = !button_state_.touchContact;
-  else
-    button_state_.touchJustReleased = button_state_.touchContact;
-
-  button_state_.touchContact = (state.ulButtonTouched & (1ULL << ((int)k_EButton_SteamVR_Touchpad))) > 0;
-
-  // Touchpad coordinates
-  button_state_.touchX = state.rAxis[0].x;
-  button_state_.touchY = state.rAxis[0].y;
-
-  // Trigger button
-  button_state_.triggerJustPressed = false;
-  button_state_.triggerJustReleased = false;
-
-  if (state.ulButtonPressed & (1ULL << ((int)k_EButton_SteamVR_Trigger)))
-    button_state_.triggerJustPressed = !button_state_.triggerPressed;
-  else
-    button_state_.triggerJustReleased = button_state_.triggerPressed;
-
-  button_state_.triggerPressed = (state.ulButtonPressed & (1ULL << ((int)k_EButton_SteamVR_Trigger))) > 0;
-
-  // Trigger margin
-  button_state_.triggerMargin = state.rAxis[1].x;
-
-  // Menu button
-  button_state_.menuJustPressed = false;
-  button_state_.menuJustReleased = false;
-
-  if (state.ulButtonPressed & (1ULL << ((int)k_EButton_ApplicationMenu)))
-    button_state_.menuJustPressed = !button_state_.menuPressed;
-  else
-    button_state_.menuJustReleased = button_state_.menuPressed;
-
-  button_state_.menuPressed = (state.ulButtonPressed & (1ULL << ((int)k_EButton_ApplicationMenu))) > 0;
 }
 
 TrackedController::ButtonState TrackedController::GetButtonState() {

@@ -19,12 +19,12 @@
 #ifndef HPL_GAME_H
 #define HPL_GAME_H
 
-#include "openvr.h"
 #include "system/SystemTypes.h"
 #include "math/Math.h"
 #include "input/TrackedController.h"
 
 namespace hpl {
+	class iVRBackend;
 
 	class cUpdater;
 	class iLowLevelGameSetup;
@@ -91,8 +91,7 @@ namespace hpl {
 					unsigned int alUpdateRate=60,int alMultisampling=0);
 		~cGame();
 
-    vr::IVRSystem *vr_hmd;
-    vr::TrackedDevicePose_t vr_rTrackedDevicePose[vr::k_unMaxTrackedDeviceCount];
+	iVRBackend *mpVR;
 
     cMatrixf vr_old_head_view_mat;
     cMatrixf vr_head_view_mat;
