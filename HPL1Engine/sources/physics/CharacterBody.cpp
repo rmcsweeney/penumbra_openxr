@@ -391,6 +391,13 @@ namespace hpl {
 
 	//-----------------------------------------------------------------------
 
+	void iCharacterBody::SetVRCamera(bool abX)
+	{
+		mbVRCamera = abX;
+	}
+
+	//-----------------------------------------------------------------------
+
 	void iCharacterBody::SetCollideCharacter(bool abX)
 	{
 		if(abX == mbCollideCharacter) return;
@@ -1215,15 +1222,20 @@ namespace hpl {
 
 		if(mlCameraSmoothPosNum <=0)
 		{
-      /*
-			cVector3f vPos = (mvPosition - cVector3f(0,mpBody->GetShape()->GetSize().y/2.0f,0)) + 
+			if (!mbVRCamera)
+			{
+				cVector3f vPos = (mvPosition - cVector3f(0,mpBody->GetShape()->GetSize().y/2.0f,0)) +
 							cVector3f(0,mvSize.y,0);
-      */
+				mpCamera->SetPosition(vPos + mvCameraPosAdd);
+			}
+			else
+			{
+				cVector3f vPos = (mvPosition - cVector3f(0, 0, 0)) +
+					cVector3f(0, 0, 0);
 
-      cVector3f vPos = (mvPosition - cVector3f(0, 0, 0)) +
-        cVector3f(0, 0, 0);
+				mpCamera->SetPosition(vPos);// +mvCameraPosAdd);
+			}
 
-      mpCamera->SetPosition(vPos);// +mvCameraPosAdd);
 		}
 		//Smooth the camera position
 		else
@@ -1250,16 +1262,19 @@ namespace hpl {
 			cVector3f vPos = vTotalPos / fNum;
 			cVector3f vFirstSize = mvExtraBodies[0]->GetShape()->GetSize();
 
-      /*
-			cVector3f vHeadPos = (vPos - cVector3f(0,mpBody->GetShape()->GetSize().y/2.0f,0)) + 
+			if (mbVRCamera)
+			{
+				cVector3f vHeadPos = (mvPosition - cVector3f(0, mpBody->GetShape()->GetSize().y/2.0f, 0)) +
+					cVector3f(0, 0, 0);
+				mpCamera->SetPosition(vHeadPos);// +mvCameraPosAdd);
+			}
+			else {
+				cVector3f vHeadPos = (vPos - cVector3f(0,mpBody->GetShape()->GetSize().y/2.0f,0)) +
 								cVector3f(0,vFirstSize.y,0);
-      */
-
-      cVector3f vHeadPos = (mvPosition - cVector3f(0, mpBody->GetShape()->GetSize().y/2.0f, 0)) +
-        cVector3f(0, 0, 0);
-			
-      mpCamera->SetPosition(vHeadPos);// +mvCameraPosAdd);
+				mpCamera->SetPosition(vHeadPos + mvCameraPosAdd);
+			}
 		}
+
 	}
 
 	//-----------------------------------------------------------------------

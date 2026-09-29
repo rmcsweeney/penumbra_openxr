@@ -1962,7 +1962,8 @@ void cPlayerVRHand::Update(float afTimeStep)
   {
     mpInit->mpPlayerHands->SetCurrentModel(mHandIndex, hudModelName);
   }
-
+	iHudModel *pModel = mpInit->mpPlayerHands->GetCurrentModel(mHandIndex);
+	if (!pModel) return;
   mpInit->mpPlayerHands->GetCurrentModel(mHandIndex)->SetHandIndex(mHandIndex);
 }
 

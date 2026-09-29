@@ -603,8 +603,7 @@ void cPlayerState_Normal_VR::OnPostSceneDraw() {
 
       auto ofs = crosshairMat->GetTextureOffset(eMaterialTexture_Diffuse);
 
-      tVertexVec vtx;
-      vtx.reserve(4);
+      tVertexVec vtx(4);
 
       cColor color(1.0f, 1.0f);
 
@@ -1033,8 +1032,7 @@ void cPlayerState_UseItem_VR::OnPostSceneDraw() {
 
   auto ofs = itemMat->GetTextureOffset(eMaterialTexture_Diffuse);
 
-  tVertexVec vtx;
-  vtx.reserve(4);
+  tVertexVec vtx(4);
 
   cColor color = mpPlayer->GetItemFlash() ? cColor(1.0f, 1.0f) : cColor(1.0f, 0.0f, 0.0f, 1.0f);
 

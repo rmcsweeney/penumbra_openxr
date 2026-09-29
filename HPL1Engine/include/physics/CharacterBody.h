@@ -192,6 +192,9 @@ namespace hpl {
     void SetIsPlayer(bool abX);
     bool IsPlayer() { return mbIsPlayer; }
 
+		void SetVRCamera(bool abX);
+		bool IsVRCamera() { return mbVRCamera; }
+
 		void SetCollideCharacter(bool abX);
 		bool GetCollideCharacter(){ return mbCollideCharacter;}
 
@@ -358,6 +361,7 @@ namespace hpl {
 		float mfMass;
 
 		bool mbActive;
+		bool mbVRCamera;
 
 		bool mbCollideCharacter;
     bool mbCollidePlayer;
