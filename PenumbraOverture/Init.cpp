@@ -329,7 +329,7 @@ bool cInit::Init(tString asCommandLine)
 	mvScreenSize.x = mpConfig->GetInt("Screen","Width",800);
 	mvScreenSize.y = mpConfig->GetInt("Screen","Height",600);
 	mbFullScreen = mpConfig->GetBool("Screen", "FullScreen", true);
-	mbVsync = false;
+	mbVsync = mpConfig->GetBool("Screen", "Vsync", true);
 	mbLogResources = mpConfig->GetBool("Debug", "LogResources", false);
 	mbDebugInteraction = mpConfig->GetBool("Debug", "DebugInteraction", false);
 
@@ -441,7 +441,7 @@ bool cInit::Init(tString asCommandLine)
 	//Make sure hardware is really used.
 	mbUseSoundHardware = mpGame->GetSound()->GetLowLevel()->IsHardwareAccelerated();
 
-	mpGame->GetGraphics()->GetLowLevel()->SetVsyncActive(mbVsync);
+	mpGame->GetGraphics()->GetLowLevel()->SetVsyncActive(mbVsync && !mpGame->mpVR->IsActive());
 
 	mbShowPreMenu = mpConfig->GetBool("Game","ShowPreMenu",true);
 	mbShowMenu = mpConfig->GetBool("Game","ShowMenu",true);
