@@ -28,7 +28,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include <GL/glew.h>
+
 #include "graphics/FontData.h"
 #include "impl/LowLevelGraphicsSDL.h"
 #include "impl/SDLBitmap2D.h"
@@ -40,6 +40,8 @@
 #include "impl/VertexBufferVBO.h"
 
 #include "impl/OcclusionQueryOGL.h"
+#include <GL/glew.h>
+#include <GL/glxew.h>
 
 namespace hpl {
 
@@ -227,6 +229,7 @@ namespace hpl {
 
 		Log("Init GLEW...");
 		GLenum glewErr = glewInit();
+		Log("GLX swap control: %d\n", GLXEW_SGI_swap_control);
 		if (glewErr == GLEW_OK)
 		{
 			Log("OK (GLEW %s GL %s)\n", glewGetString(GLEW_VERSION), glGetString(GL_VERSION));
@@ -479,11 +482,11 @@ namespace hpl {
 		{
 			wglSwapIntervalEXT(abX ? 1 : 0);
 		}
-		/*#elif defined(__linux__) TODO:have SDL handle vsync
-		if (GLEW_GLX_SGI_swap_control)
+		#elif defined(__linux__) //TODO:have SDL handle vsync
+		if (GLXEW_EXT_swap_control)
 		{
 			glXSwapIntervalSGI(abX ? 1 : 0);
-		}  */
+		}
 		#endif
 	}
 
