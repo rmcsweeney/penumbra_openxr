@@ -101,9 +101,10 @@ cPlayer::cPlayer(cInit *apInit)  : iUpdateable("Player")
 	
 	mvStates.resize(ePlayerState_LastEnum);
 
-  /*
-	if(mpInit->mbHasHaptics)
+	if (!mpInit->mpGame->mpVR->IsActive())
 	{
+		if(mpInit->mbHasHaptics)
+		{
 		mvStates[ePlayerState_Normal] = hplNew( cPlayerState_NormalHaptX, (mpInit,this) );
 		mvStates[ePlayerState_Push] = hplNew( cPlayerState_PushHaptX, (mpInit,this) );
 		mvStates[ePlayerState_Move] = hplNew( cPlayerState_MoveHaptX, (mpInit,this) );
@@ -114,9 +115,9 @@ cPlayer::cPlayer(cInit *apInit)  : iUpdateable("Player")
 		mvStates[ePlayerState_Message] = hplNew( cPlayerState_MessageHaptX, (mpInit,this) );
 		mvStates[ePlayerState_Throw] = hplNew( cPlayerState_ThrowHaptX, (mpInit,this) );
 		mvStates[ePlayerState_Climb] = hplNew( cPlayerState_ClimbHaptX, (mpInit,this) );
-	}
-	else
-	{
+		}
+		else
+		{
 		mvStates[ePlayerState_Normal] = hplNew( cPlayerState_Normal, (mpInit,this) );
 		mvStates[ePlayerState_Push] = hplNew( cPlayerState_Push, (mpInit,this) );
 		mvStates[ePlayerState_Move] = hplNew( cPlayerState_Move, (mpInit,this) );
@@ -127,10 +128,11 @@ cPlayer::cPlayer(cInit *apInit)  : iUpdateable("Player")
 		mvStates[ePlayerState_Message] = hplNew( cPlayerState_Message, (mpInit,this) );
 		mvStates[ePlayerState_Throw] = hplNew( cPlayerState_Throw, (mpInit,this) );
 		mvStates[ePlayerState_Climb] = hplNew( cPlayerState_Climb, (mpInit,this) );
-	}	
-  */
-
-  // because VR
+		}
+	}
+	else
+	{
+		// because VR
   mvStates[ePlayerState_Normal] = hplNew(cPlayerState_Normal_VR, (mpInit, this));
   mvStates[ePlayerState_Push] = hplNew(cPlayerState_Push_VR, (mpInit, this));
   mvStates[ePlayerState_Move] = hplNew(cPlayerState_Move_VR, (mpInit, this));
@@ -141,6 +143,9 @@ cPlayer::cPlayer(cInit *apInit)  : iUpdateable("Player")
   mvStates[ePlayerState_Message] = hplNew(cPlayerState_Message_VR, (mpInit, this));
   mvStates[ePlayerState_Throw] = hplNew(cPlayerState_Throw_VR, (mpInit, this));
   mvStates[ePlayerState_Climb] = hplNew(cPlayerState_Climb_VR, (mpInit, this));
+	}
+
+
 	
 	//The max distance you can be from something to grab it.
 	mfMaxGrabDist =  mpInit->mpGameConfig->GetFloat("Player","MaxGrabDist",0);
@@ -204,20 +209,6 @@ cPlayer::cPlayer(cInit *apInit)  : iUpdateable("Player")
 	//Hidden
 	mpHidden = hplNew( cPlayerHidden,(mpInit) );
 
-  //Create VR Left hand
-  mpVRLeftHand = hplNew(cPlayerVRHand, (mpInit, 0));
-
-  //Create VR Right hand
-  mpVRRightHand = hplNew(cPlayerVRHand, (mpInit, 1));
-
-  //Create VR Teleport
-  mpVRTeleport = hplNew(cPlayerVRTeleport, (mpInit));
-
-  //Create VR Pointer
-  mpVRPointer = hplNew(cPlayerVRPointer, (mpInit));
-
-  //Create VR Pointer
-  mpVRDimmer = hplNew(cPlayerVRDimmer, (mpInit));
 	
 	//Create ray callbacks
 	mpGroundRayCallback = hplNew( cPlayerGroundRayCallback,() );
@@ -1939,71 +1930,78 @@ void cPlayer::OnPostSceneDraw()
 	mpInit->mpGame->GetGraphics()->GetLowLevel()->DrawSphere(mvLineEnd,0.1f,cColor(1,0,1,1));*/
 	
 	mpFlashLight->OnPostSceneDraw();
-  mpVRTeleport->OnPostSceneDraw();
-
-  mpVRDimmer->OnPostSceneDraw();
-
-  mpInit->mpInventory->OnPostSceneDraw();
-
-  mpInit->mpEffectHandler->GetSubTitle()->OnPostSceneDraw();
-
 	mvStates[mState]->OnPostSceneDraw();
 
-	///////////////////////////////
-	//Gui Hand effects
-	if(mpInit->mbHasHaptics)
+	if (mpInit->mpGame->mpVR->IsActive())
 	{
-		mpHapticCamera->OnPostSceneDraw();
+		mpVRTeleport->OnPostSceneDraw();
+
+		mpVRDimmer->OnPostSceneDraw();
+
+
+
+		mpInit->mpInventory->OnPostSceneDraw();
+
+		mpInit->mpEffectHandler->GetSubTitle()->OnPostSceneDraw();
+
+
+
+		///////////////////////////////
+		//Gui Hand effects
+		if(mpInit->mbHasHaptics)
+		{
+			mpHapticCamera->OnPostSceneDraw();
+		}
+
+		///////////////////////////////
+		//Examine icon in world space (for VR)
+		if (mCrossHairState == eCrossHairState_Examine) {
+			auto crosshairMat = mvCrossHairs[mCrossHairState]->GetMaterial();
+
+			iLowLevelGraphics *llg = mpInit->mpGame->GetGraphics()->GetLowLevel();
+
+			llg->SetDepthTestActive(false);
+			llg->PushMatrix(eMatrix_ModelView);
+
+			cMatrixf iconMat = cMatrixf::Identity;
+
+			// Rotate to face eyes
+			iconMat = cMath::MatrixMul(cMath::MatrixInverse(mpCamera->GetViewMatrix().GetRotation()), iconMat);
+
+			// Move to examine pick position
+			iconMat = cMath::MatrixMul(cMath::MatrixTranslate(GetExaminePos()), iconMat);
+
+			llg->SetMatrix(eMatrix_ModelView, cMath::MatrixMul(mpCamera->GetViewMatrix(), iconMat));
+
+			auto ofs = crosshairMat->GetTextureOffset(eMaterialTexture_Diffuse);
+
+			tVertexVec vtx(4);
+
+			cColor color(1.0f, 1.0f);
+
+			vtx[0] = cVertex(cVector3f(-0.035f, 0.035, 0), cVector2f(ofs.x, ofs.y), color);
+			vtx[1] = cVertex(cVector3f(0.035, 0.035, 0), cVector2f(ofs.x + ofs.w, ofs.y), color);
+			vtx[2] = cVertex(cVector3f(0.035, -0.035, 0), cVector2f(ofs.x + ofs.w, ofs.y + ofs.h), color);
+			vtx[3] = cVertex(cVector3f(-0.035, -0.035, 0), cVector2f(ofs.x, ofs.y + ofs.h), color);
+
+			llg->SetTexture(0, crosshairMat->GetTexture(eMaterialTexture_Diffuse));
+			llg->SetBlendActive(true);
+			llg->SetBlendFunc(eBlendFunc_SrcAlpha, eBlendFunc_OneMinusSrcAlpha);
+			llg->SetCullActive(false);
+
+			llg->DrawQuad(vtx);
+
+			llg->SetTexture(0, NULL);
+			llg->SetBlendActive(true);
+			llg->SetCullActive(true);
+
+			llg->PopMatrix(eMatrix_ModelView);
+			llg->SetDepthTestActive(true);
+		}
+
+		mpVRPointer->OnPostSceneDraw();
 	}
-
-  ///////////////////////////////
-  //Examine icon in world space (for VR)
-  if (mCrossHairState == eCrossHairState_Examine) {
-    auto crosshairMat = mvCrossHairs[mCrossHairState]->GetMaterial();
-
-    iLowLevelGraphics *llg = mpInit->mpGame->GetGraphics()->GetLowLevel();
-
-    llg->SetDepthTestActive(false);
-    llg->PushMatrix(eMatrix_ModelView);
-
-    cMatrixf iconMat = cMatrixf::Identity;
-
-    // Rotate to face eyes
-    iconMat = cMath::MatrixMul(cMath::MatrixInverse(mpCamera->GetViewMatrix().GetRotation()), iconMat);
-
-    // Move to examine pick position
-    iconMat = cMath::MatrixMul(cMath::MatrixTranslate(GetExaminePos()), iconMat);
-
-    llg->SetMatrix(eMatrix_ModelView, cMath::MatrixMul(mpCamera->GetViewMatrix(), iconMat));
-
-    auto ofs = crosshairMat->GetTextureOffset(eMaterialTexture_Diffuse);
-
-    tVertexVec vtx(4);
-
-    cColor color(1.0f, 1.0f);
-
-    vtx[0] = cVertex(cVector3f(-0.035f, 0.035, 0), cVector2f(ofs.x, ofs.y), color);
-    vtx[1] = cVertex(cVector3f(0.035, 0.035, 0), cVector2f(ofs.x + ofs.w, ofs.y), color);
-    vtx[2] = cVertex(cVector3f(0.035, -0.035, 0), cVector2f(ofs.x + ofs.w, ofs.y + ofs.h), color);
-    vtx[3] = cVertex(cVector3f(-0.035, -0.035, 0), cVector2f(ofs.x, ofs.y + ofs.h), color);
-
-    llg->SetTexture(0, crosshairMat->GetTexture(eMaterialTexture_Diffuse));
-    llg->SetBlendActive(true);
-    llg->SetBlendFunc(eBlendFunc_SrcAlpha, eBlendFunc_OneMinusSrcAlpha);
-    llg->SetCullActive(false);
-
-    llg->DrawQuad(vtx);
-
-    llg->SetTexture(0, NULL);
-    llg->SetBlendActive(true);
-    llg->SetCullActive(true);
-
-    llg->PopMatrix(eMatrix_ModelView);
-    llg->SetDepthTestActive(true);
-  }
-
-  mpVRPointer->OnPostSceneDraw();
-  // mpInit->mpGame->GetScene()->GetWorld3D()->GetPhysicsWorld()->RenderDebugGeometry(pLowGfx, cColor(1.0f, 0.0f, 0.0f, 1.0f));
+		// mpInit->mpGame->GetScene()->GetWorld3D()->GetPhysicsWorld()->RenderDebugGeometry(pLowGfx, cColor(1.0f, 0.0f, 0.0f, 1.0f));
 }
 
 //////////////////////////////////////////////////////////////////////////

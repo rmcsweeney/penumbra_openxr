@@ -12,4 +12,4 @@ target_include_directories(angelscript PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/add_on
 )
-target_compile_definitions(angelscript PUBLIC AS_MAX_PORTABILITY)
+target_compile_definitions(angelscript PUBLIC)

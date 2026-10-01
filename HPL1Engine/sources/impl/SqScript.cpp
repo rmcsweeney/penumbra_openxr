@@ -121,7 +121,22 @@ namespace hpl {
 	bool cSqScript::Run(const tString& asFuncLine)
 	{
 		if (mpModule == nullptr){ return false;}
-		return ExecuteString(mpScriptEngine, asFuncLine.c_str(), mpModule);
+		asIScriptContext *pCtx = mpScriptEngine->CreateContext();
+		int result = ExecuteString(mpScriptEngine, asFuncLine.c_str(), mpModule, pCtx);
+
+		if (result == asEXECUTION_EXCEPTION)
+		{
+			Warning("Script exception in '%s': %s (in '%s', line %d)\n", asFuncLine.c_str(),
+				pCtx->GetExceptionString(),
+				pCtx->GetExceptionFunction()->GetDeclaration(),
+				pCtx->GetExceptionLineNumber());
+		}
+		else if (result != asEXECUTION_FINISHED)
+		{
+			Warning("Script '%s' returned %d\n", asFuncLine.c_str(), result);
+		}
+		pCtx->Release();
+		return result == asEXECUTION_FINISHED;
 	}
 
 	//-----------------------------------------------------------------------

@@ -1280,8 +1280,12 @@ void cNotebook::SetActive(bool abX)
 		mvBookTypes[0].mfAlpha = 1;
 
     // Hide hands
-    mpInit->mpPlayer->GetRightHand()->SetVisible(false);
-    mpInit->mpPlayer->GetLeftHand()->SetVisible(false);
+		if (mpInit->mpGame->mpVR->IsActive() )
+		{
+			mpInit->mpPlayer->GetRightHand()->SetVisible(false);
+			mpInit->mpPlayer->GetLeftHand()->SetVisible(false);
+		}
+
 	}
 	else
 	{
@@ -1303,8 +1307,11 @@ void cNotebook::SetActive(bool abX)
 		}
 
     // Show hands
-    mpInit->mpPlayer->GetRightHand()->SetVisible(true);
-    mpInit->mpPlayer->GetLeftHand()->SetVisible(true);
+		if (mpInit->mpGame->mpVR->IsActive())
+		{
+			mpInit->mpPlayer->GetRightHand()->SetVisible(true);
+			mpInit->mpPlayer->GetLeftHand()->SetVisible(true);
+		}
 	}
 }
 

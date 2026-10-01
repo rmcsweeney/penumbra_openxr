@@ -322,7 +322,7 @@ namespace hpl {
 	}
 	bool cPhysicsBodyNewton::GetEnabled() const
 	{
-		return NewtonBodyGetSleepState(mpNewtonBody) ==0?false: true;
+		return NewtonBodyGetSleepState(mpNewtonBody) ==0;
 	}
 	
 	//-----------------------------------------------------------------------

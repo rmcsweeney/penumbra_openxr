@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with Penumbra Overture.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef GAME_PLAYER_STATE_INTERACT_H
-#define GAME_PLAYER_STATE_INTERACT_H
+#ifndef GAME_PLAYER_STATE_INTERACT_VR_H
+#define GAME_PLAYER_STATE_INTERACT_VR_H
 
 #include "StdAfx.h"
 #include "PlayerState.h"
