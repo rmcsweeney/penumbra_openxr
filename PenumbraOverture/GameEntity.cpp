@@ -299,14 +299,13 @@ eCrossHairState iGameEntity::GetPickCrossHairState(iPhysicsBody *apBody, bool no
 
 	//////////////////////////////////////////
 	//Interaction available
-  if (!noInteract) {
+	if (!noInteract) {
     cGameStickArea *pStickArea = mpInit->mpMapHandler->GetBodyStickArea(apBody);
     if (apBody->GetMass() != 0 || mType == eGameEntityType_Area || (pStickArea && pStickArea->GetCanDeatch()))
     {
       if (mvCallbackScripts[eGameEntityScriptType_PlayerInteract] || mbHasInteraction)
       {
-        // if(fDistance <= mfMaxInteractDist) return eCrossHairState_Active;
-        return eCrossHairState_Active;
+        if(fDistance <= mfMaxInteractDist) return eCrossHairState_Active;
       }
     }
   }
@@ -315,7 +314,7 @@ eCrossHairState iGameEntity::GetPickCrossHairState(iPhysicsBody *apBody, bool no
 	// Examine available
 	if(mvCallbackScripts[eGameEntityScriptType_PlayerExamine] || msDescription!=_W(""))
 	{
-		if(mpInit->mpPlayer->GetExamineDist() <= mfMaxExamineDist) return eCrossHairState_Examine;
+		if(fDistance <= mfMaxExamineDist) return eCrossHairState_Examine;
 	}
 
 	//////////////////////////////////////////
@@ -382,7 +381,7 @@ void iGameEntity::PlayerInteract()
 	//////////////////////
 	// Script stuff
 	//if(GetPickedDistance() <= mfMaxInteractDist &&
-  if (
+  if ( GetExamineDistance() <= mfMaxExamineDist  &&
 		(mpInit->mbHasHaptics==false || mpInit->mpPlayer->mbProxyTouching || 
 		 mType == eGameEntityType_Area))
 	{
@@ -401,7 +400,7 @@ void iGameEntity::PlayerExamine()
 {
 	//////////////////////
 	// Script stuff
-	if(mpInit->mpPlayer->GetExamineDist() <= mfMaxExamineDist)
+	if(GetExamineDistance() <= mfMaxExamineDist)
 	{
 		cWorld3D *pWorld = mpInit->mpGame->GetScene()->GetWorld3D();
 		if(mvCallbackScripts[eGameEntityScriptType_PlayerExamine])
@@ -416,9 +415,21 @@ void iGameEntity::PlayerExamine()
 
 //-----------------------------------------------------------------------
 
+float iGameEntity::GetExamineDistance()
+{
+	return mpInit->mpGame->mpVR->IsActive() ? mpInit->mpPlayer->GetExamineDist() : GetPickedDistance();
+}
+
+//-----------------------------------------------------------------------
+
 void iGameEntity::OnPlayerExamine()
 {
-	if(mfMaxExamineDist >= mpInit->mpPlayer->GetExamineDist() && msDescription!=_W(""))
+	bool isVR = mpInit->mpGame->mpVR->IsActive();
+
+	float fDist = GetExamineDistance();
+	iPhysicsBody* pBody =isVR ? mpInit->mpPlayer->GetExamineBody() : mpInit->mpPlayer->GetPickedBody();
+
+	if(mfMaxExamineDist >= fDist && msDescription!=_W(""))
 	{
 		mpInit->mpGameMessageHandler->Add(msDescription);
 		//if(mbShowDescritionOnce) msDescription = _W("");
@@ -426,7 +437,7 @@ void iGameEntity::OnPlayerExamine()
 		
 		//////////////////////////////
 		//Set focus on the object
-		mpInit->mpEffectHandler->GetDepthOfField()->FocusOnBody(mpInit->mpPlayer->GetExamineBody());
+		mpInit->mpEffectHandler->GetDepthOfField()->FocusOnBody(pBody);
 		mpInit->mpEffectHandler->GetDepthOfField()->SetFocusBody(NULL);
 		mpInit->mpEffectHandler->GetDepthOfField()->SetActive(true,1.2f);
 

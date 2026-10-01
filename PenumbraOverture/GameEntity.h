@@ -198,6 +198,8 @@ public:
 	void PlayerInteract();
 	void PlayerExamine();
 
+	float GetExamineDistance();
+
 	virtual void OnPlayerPick(){}
 	virtual void OnPlayerInteract(){}
 	virtual void OnPlayerExamine();

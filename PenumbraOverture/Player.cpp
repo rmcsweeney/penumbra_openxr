@@ -732,8 +732,13 @@ void cPlayer::SetPickedBody(iPhysicsBody* apBody)
 //-----------------------------------------------------------------------
 
 float cPlayer::GetPickedDist()
-{ 
-  return 0; // mpPickRayCallback->mfPickedDist;
+{
+	if (!mpInit->mpGame->mpVR->IsActive())
+	{
+		return mpPickRayCallback->mfPickedDist;
+	}
+	return 0;
+
 }
 
 const cVector3f& cPlayer::GetPickedPos()
@@ -1638,6 +1643,8 @@ void cPlayer::OnDraw()
 	
 	////////////////////////////////
 	//Cross hair
+	float fCrossZ = mpInit->mpGame->mpVR->IsActive() ? 10.0f : 100.0f;
+
 	if(IsActive()==false)
 	{
 		//Do noting...
@@ -1658,7 +1665,7 @@ void cPlayer::OnDraw()
 			cVector2l vSize = pImage->GetSize();
 			cVector2f vPosAdd(((float)vSize.x) / 2.0f, ((float)vSize.y) / 2.0f);
 			mpGfxDrawer->DrawGfxObject(	mvCrossHairs[mCrossHairState],
-										cVector3f(0,0,100)+(vPos - vPosAdd));
+										cVector3f(0,0,fCrossZ)+(vPos - vPosAdd));
 		}
 	}
 	else if(mCrossHairState == eCrossHairState_Item)
@@ -1674,10 +1681,10 @@ void cPlayer::OnDraw()
 			
 			if(mbItemFlash)
 			{
-				mpGfxDrawer->DrawGfxObject(pObject,cVector3f(0,0,10)+(mvCrossHairPos - vPosAdd),vSize,
+				mpGfxDrawer->DrawGfxObject(pObject,cVector3f(0,0,fCrossZ)+(mvCrossHairPos - vPosAdd),vSize,
 											cColor(1,1,1,1));
 				for(int i=0; i<2; ++i)
-					mpGfxDrawer->DrawGfxObject(pAdditive,cVector3f(0,0,11)+(mvCrossHairPos - vPosAdd),vSize,
+					mpGfxDrawer->DrawGfxObject(pAdditive,cVector3f(0,0,fCrossZ + 1)+(mvCrossHairPos - vPosAdd),vSize,
 											cColor(1,1,1,mItemFlash.val));
 				
 				/*mpGfxDrawer->DrawGfxObject(pAdditive,cVector3f(3,3,99)+(mvCrossHairPos - vPosAdd),vSize,
@@ -1691,12 +1698,12 @@ void cPlayer::OnDraw()
 			}
 			else
 			{
-				mpGfxDrawer->DrawGfxObject(pObject,cVector3f(0,0,10)+(mvCrossHairPos - vPosAdd),vSize,
+				mpGfxDrawer->DrawGfxObject(pObject,cVector3f(0,0,fCrossZ)+(mvCrossHairPos - vPosAdd),vSize,
 					cColor(1,0.3f,0.3f,1.0f));
 			}
 		}
 	}
-  else if (mCrossHairState == eCrossHairState_Examine) {
+  else if (mCrossHairState == eCrossHairState_Examine && mpInit->mpGame->mpVR->IsActive()) {
     // Do nothing, this is handled in OnPostSceneDraw for VR
   }
 	else if(mCrossHairState != eCrossHairState_None)
