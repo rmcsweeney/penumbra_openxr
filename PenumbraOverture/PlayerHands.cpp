@@ -86,6 +86,7 @@ iHudModel::iHudModel(ePlayerHandType aType)
 
 bool iHudModel::UpdatePoseMatrix(cMatrixf& aPoseMtx, float afTimeStep)
 {
+	if (!mpInit->mpGame->mpVR->IsActive()) { return false; }
   auto vr_scaleMtx = cMath::MatrixScale(cVector3f(mfVrScale));
   auto vr_rotMtx = cMath::MatrixRotate(mvVrRotOffset, eEulerRotationOrder_XYZ);
   auto vr_transMtx = cMath::MatrixTranslate(mvVrTransOffset);
@@ -297,8 +298,119 @@ void cPlayerHands::OnStart()
 
 //-----------------------------------------------------------------------
 
+void cPlayerHands::UpdateFlat(float afTimeStep)
+{
+	UpdatePrevPostions();
+
+	///////////////////////////////////
+	//Get the camera properties
+	cCamera3D *pCam = mpInit->mpPlayer->GetCamera();
+
+	cVector3f vRot = cVector3f(pCam->GetPitch(), pCam->GetYaw(),pCam->GetRoll());
+	cMatrixf mtxSmoothCam = 	cMath::MatrixRotate(vRot * -1.0f, eEulerRotationOrder_YXZ);
+	cVector3f vUp = mtxSmoothCam.GetUp();//pCam->GetUp();
+	cVector3f vRight = mtxSmoothCam.GetRight();//pCam->GetRight();
+	cVector3f vForward = mtxSmoothCam.GetForward()*-1.0f;//pCam->GetForward();
+
+	/////////////////////////////////////
+	// Update the current model
+	for(int i=0; i< mlCurrentModelNum; ++i)
+	{
+		iHudModel *pHudModel = mvCurrentHudModels[i];
+		if(pHudModel==NULL) continue;
+
+		cMatrixf mtxPose;
+
+		////////////////////
+		//Update state
+		switch(pHudModel->mState)
+		{
+			//Idle
+			case eHudModelState_Idle:
+			{
+				if(pHudModel->UpdatePoseMatrix(mtxPose,afTimeStep)==false)
+				{
+					mtxPose = cMath::MatrixRotate(pHudModel->mEquipPose.mvRot,eEulerRotationOrder_XYZ);
+					mtxPose.SetTranslation(pHudModel->mEquipPose.mvPos);
+				}
+				break;
+			}
+			//Equip
+			case eHudModelState_Equip:
+			{
+				float fT = cMath::Clamp(pHudModel->mfTime,0,1);
+				mtxPose = InterpolatePosesToMatrix(fT,pHudModel->mUnequipPose,pHudModel->mEquipPose);
+
+				pHudModel->mfTime += afTimeStep/pHudModel->mfEquipTime;
+				if(pHudModel->mfTime >= 1)
+				{
+					pHudModel->mState = eHudModelState_Idle;
+					pHudModel->mfTime = 1;
+				}
+				break;
+			}
+			//Unequip
+			case eHudModelState_Unequip:
+				{
+					float fT = cMath::Clamp(pHudModel->mfTime,0,1);
+					mtxPose = InterpolatePosesToMatrix(fT,pHudModel->mEquipPose,pHudModel->mUnequipPose);
+
+					pHudModel->mfTime += afTimeStep/pHudModel->mfUnequipTime;
+					if(pHudModel->mfTime >= 1)
+					{
+						//Log("Creating next model and destroying current!\n");
+
+                        pHudModel->mState = eHudModelState_Idle;
+						pHudModel->mfTime =0;
+
+						pHudModel->DestroyEntities();
+
+						mvCurrentHudModels[i] = NULL;
+
+						if(pHudModel->msNextModel!="")
+						{
+							SetCurrentModel(i,pHudModel->msNextModel);
+						}
+						pHudModel->Reset();
+						continue;
+					}
+					break;
+				}
+		}
+
+
+		////////////////////
+		//Set rotation
+		cMatrixf mtxTransform = cMath::MatrixMul(
+								cMath::MatrixRotate(mvSmoothCameraRot, eEulerRotationOrder_XYZ),
+								mtxPose.GetRotation()
+											);
+
+		//pHudModel->mpEntity->SetMatrix(mtxRot);
+
+		/////////////////////////
+		//Set position
+		const cVector3f &vLocalPos = mtxPose.GetTranslation();
+		cVector3f vRealLocalPos =	vUp *		vLocalPos.y +
+									vRight *	vLocalPos.x +
+									vForward *	vLocalPos.z +
+									cVector3f(0,-mpInit->mpPlayer->GetHeadMove()->GetPos()*0.1f,0);;
+
+		mtxTransform.SetTranslation(pCam->GetPosition() + vRealLocalPos);
+
+		pHudModel->mpEntity->SetMatrix(mtxTransform);
+	}
+}
+
+//-----------------------------------------------------------------------
+
 void cPlayerHands::Update(float afTimeStep)
 {
+	if (!mpInit->mpGame->mpVR->IsActive())
+	{
+		UpdateFlat(afTimeStep);
+		return;
+	}
 	UpdatePrevPostions();
 	
 	///////////////////////////////////

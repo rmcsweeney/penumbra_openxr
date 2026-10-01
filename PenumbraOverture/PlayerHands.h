@@ -168,6 +168,7 @@ public:
 	~cPlayerHands();
 
 	void OnStart();
+	void UpdateFlat(float afTimeStep);
 	void Update(float afTimeStep);
 	void Reset();
 	void OnDraw();

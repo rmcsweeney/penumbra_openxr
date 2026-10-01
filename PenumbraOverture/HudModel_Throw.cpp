@@ -157,10 +157,19 @@ void cHudModel_Throw::OnAttackUp()
 	///////////////////////////////
 	//Create entity
 	cCamera3D *pCam = mpInit->mpPlayer->GetCamera();
+	cMatrixf mtxStart;
 
-	//cVector3f vRot = cVector3f(pCam->GetPitch(),pCam->GetYaw(), pCam->GetRoll());
-  cMatrixf mtxStart; // = cMath::MatrixRotate(vRot, eEulerRotationOrder_XYZ);
-  mpInit->mpPlayerHands->GetCurrentModel(1)->UpdatePoseMatrix(mtxStart, 0.0f);
+	if (mpInit->mpGame->mpVR->IsActive())
+	{
+		cVector3f vRot = cVector3f(pCam->GetPitch(),pCam->GetYaw(), pCam->GetRoll());
+		mtxStart = cMath::MatrixRotate(vRot, eEulerRotationOrder_XYZ);
+		mtxStart.SetTranslation(pCam->GetPosition());
+	}
+	else
+	{
+		mpInit->mpPlayerHands->GetCurrentModel(1)->UpdatePoseMatrix(mtxStart, 0.0f);
+	}
+
 	//mtxStart.SetTranslation(pCam->GetPosition());
 	
 	iEntity3D *pEntity = mpInit->mpGame->GetScene()->GetWorld3D()->CreateEntity("Throw",mtxStart,
@@ -176,10 +185,19 @@ void cHudModel_Throw::OnAttackUp()
         for(int i=0; i< pEntity->GetBodyNum(); ++i)
 		{
 			iPhysicsBody *pBody = pEntity->GetBody(i);
-      pBody->SetLinearVelocity(mpInit->mpGame->vr_right_hand.GetVelocity() * 1.5f);
-      pBody->SetAngularVelocity(mpInit->mpGame->vr_right_hand.GetAngularVelocity());
-      pBody->SetActive(true);
-      pBody->SetEnabled(true);
+        	if (mpInit->mpGame->mpVR->IsActive())
+        	{
+        		pBody->AddImpulse(pCam->GetForward() * fImpulse);
+        		pBody->AddTorque(vRot);
+        	}
+        	else
+        	{
+        		pBody->SetLinearVelocity(mpInit->mpGame->vr_right_hand.GetVelocity() * 1.5f);
+				pBody->SetAngularVelocity(mpInit->mpGame->vr_right_hand.GetAngularVelocity());
+				pBody->SetActive(true);
+				pBody->SetEnabled(true);
+        	}
+
 		}
 	}
 
