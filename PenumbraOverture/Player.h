@@ -493,13 +493,13 @@ private:
 	cPlayerLookAt *mpLookAt;
 	cPlayerHidden *mpHidden;
 
-  cPlayerVRHand *mpVRRightHand;
-  cPlayerVRHand *mpVRLeftHand;
+  cPlayerVRHand *mpVRRightHand = nullptr;
+  cPlayerVRHand *mpVRLeftHand = nullptr;
 
-  cPlayerVRTeleport *mpVRTeleport;
-  cPlayerVRPointer *mpVRPointer;
+  cPlayerVRTeleport *mpVRTeleport = nullptr;
+  cPlayerVRPointer *mpVRPointer = nullptr;
 
-  cPlayerVRDimmer *mpVRDimmer;
+  cPlayerVRDimmer *mpVRDimmer = nullptr;
 	
 	iPlayerWeaponCallback *mpWeaponCallback;
 

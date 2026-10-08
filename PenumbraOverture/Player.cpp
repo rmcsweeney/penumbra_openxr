@@ -209,6 +209,21 @@ cPlayer::cPlayer(cInit *apInit)  : iUpdateable("Player")
 	//Hidden
 	mpHidden = hplNew( cPlayerHidden,(mpInit) );
 
+	//Create VR Left hand^M
+	mpVRLeftHand = hplNew(cPlayerVRHand, (mpInit, 0));
+
+	//Create VR Right hand^M
+	mpVRRightHand = hplNew(cPlayerVRHand, (mpInit, 1));
+
+	//Create VR Teleport^M
+	mpVRTeleport = hplNew(cPlayerVRTeleport, (mpInit));
+
+	//Create VR Pointer^M
+	mpVRPointer = hplNew(cPlayerVRPointer, (mpInit));
+
+	//Create VR Pointer^M
+	mpVRDimmer = hplNew(cPlayerVRDimmer, (mpInit));
+
 	
 	//Create ray callbacks
 	mpGroundRayCallback = hplNew( cPlayerGroundRayCallback,() );
@@ -1086,9 +1101,13 @@ void cPlayer::OnWorldLoad()
 	mpHidden->OnWorldLoad();
 	mpLean->OnWorldLoad();
 
-  mpVRTeleport->OnWorldLoad();
+	if (mpInit->mpGame->mpVR->IsActive())
+	{
+		mpVRTeleport->OnWorldLoad();
 
-  mpVRDimmer->OnWorldLoad();
+		mpVRDimmer->OnWorldLoad();
+	}
+
 
 	if(mpInit->mbHasHaptics) mpHapticCamera->OnWorldLoad();
 }
