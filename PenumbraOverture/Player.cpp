@@ -1730,7 +1730,7 @@ void cPlayer::OnDraw()
 		cResourceImage *pImage = mvCrossHairs[mCrossHairState]->GetMaterial()->GetImage(eMaterialTexture_Diffuse);
 		cVector2l vSize = pImage->GetSize();
 		cVector2f vPosAdd(((float)vSize.x) / 2.0f, ((float)vSize.y) / 2.0f);
-		mpGfxDrawer->DrawGfxObject(mvCrossHairs[mCrossHairState],cVector3f(0,0,10)+(mvCrossHairPos - vPosAdd));
+		mpGfxDrawer->DrawGfxObject(mvCrossHairs[mCrossHairState],cVector3f(0,0,fCrossZ)+(mvCrossHairPos - vPosAdd));
 	}
 	else if(mpInit->mbShowCrossHair)
 	{
