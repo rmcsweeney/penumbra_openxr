@@ -216,8 +216,9 @@ public:
 
 private:
 	void RenderItemEffect();
+void DebugDumpEntities(bool abNudge);
 
-	void PrintSoundsPlaying();
+void PrintSoundsPlaying();
 
 	void PreUpdate(double afTimeSinceVisit);
 

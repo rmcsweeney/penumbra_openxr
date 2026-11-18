@@ -130,6 +130,8 @@ namespace hpl {
 
 		//pHingeJoint->OnPhysicsUpdate();
 
+
+
 		if(pHingeJoint->mfMaxAngle == 0 && pHingeJoint->mfMinAngle == 0) return 0;
 
         float fAngle = NewtonHingeGetJointAngle (pHinge);
@@ -139,6 +141,14 @@ namespace hpl {
 
 		bool bSkipLimitCheck = false;
 		if(fabs(pHingeJoint->mfPreviousAngle - fAngle) > cMath::ToRad(300)) bSkipLimitCheck = true;
+
+		if (pHingeJoint->GetName().find("hatch") != tString::npos &&
+			std::abs(fAngle - pHingeJoint->mfDebugLastAngle) > cMath::ToRad(0.1f))
+		{
+			pHingeJoint->mfDebugLastAngle = fAngle;
+			Log("Hinge '%s' angle %.1f min %.1f max %.1f\n", pHingeJoint->GetName().c_str(),
+				cMath::ToDeg(fAngle), cMath::ToDeg(pHingeJoint->mfMinAngle), cMath::ToDeg(pHingeJoint->mfMaxAngle));
+		}
 
 		//Max limit
 		if (fAngle > pHingeJoint->mfMaxAngle && bSkipLimitCheck==false)

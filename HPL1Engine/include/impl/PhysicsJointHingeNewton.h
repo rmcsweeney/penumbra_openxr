@@ -42,10 +42,12 @@ namespace hpl {
 
 		float GetDistance();
 		float GetAngle();
-	
+
 	private:
 		float mfPreviousAngle;
 		static unsigned LimitCallback(const NewtonJoint* pHinge, NewtonHingeSliderUpdateDesc* pDesc);
+
+		float mfDebugLastAngle = 9999.0f; // TEMP: hatch joint debug
 	};
 };
 #endif // HPL_PHYSICS_JOINT_HINGE_NEWTON_H

@@ -554,9 +554,9 @@ namespace hpl {
 																);
 					}
 
-					//Log("Creating Collider %s, type: %d size: %s\n with matrix: %s\n", Geom.msName.c_str(),(int)ShapeType,
-					//									pCollider->mvSize.ToString().c_str(),
-					//									pCollider->m_mtxOffset.ToString().c_str());
+					Log("Creating Collider %s, type: %d size: %s\n with matrix: %s\n", Geom.msName.c_str(),(int)ShapeType,
+														pCollider->mvSize.ToString().c_str(),
+														pCollider->m_mtxOffset.ToString().c_str());
 				}
 
 				///// BILLBOARD /////////////////////////////

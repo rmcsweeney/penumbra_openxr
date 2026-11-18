@@ -534,7 +534,7 @@ bool cMapHandler::Load(const tString &asFile,const tString& asStartPos)
 
 	unsigned long lTime = mpInit->mpGame->GetSystem()->GetLowLevel()->GetTime() - lStartTime;
 	Log("Loading map '%s' took: %d ms\n",pWorld->GetFileName().c_str(),lTime);
-	
+	DebugDumpEntities(true);
 	PreUpdate(fTimeSinceVisit);
 
 	mpInit->mpGame->ResetLogicTimer();
@@ -1201,6 +1201,39 @@ void cMapHandler::RenderItemEffect()
 }
 //-----------------------------------------------------------------------
 
+void cMapHandler::DebugDumpEntities(bool abNudge)
+{
+	tGameEntityIterator it = GetGameEntityIterator();
+	while (it.HasNext())
+	{
+		iGameEntity* pEntity = it.Next();
+		cVector3f vPos = pEntity->GetBodyNum() > 0 ? pEntity->GetBody(0)->GetWorldPosition()
+												   : cVector3f(0, 0, 0);
+		Log("ENT '%s' type %d active %d bodies %d pos %s\n",
+			pEntity->GetName().c_str(), (int)pEntity->GetType(), pEntity->IsActive(),
+			pEntity->GetBodyNum(), vPos.ToString().c_str());
+		if (abNudge && pEntity->GetName() == "notebook" && pEntity->GetBodyNum() > 0)
+		{
+			pEntity->GetBody(0)->SetMass(0);
+			cMeshEntity* pMesh = pEntity->GetMeshEntity();
+			if (pMesh)
+				Log("  mesh '%s' visible %d active %d sector %p submeshes %d\n",
+					pMesh->GetName().c_str(), pMesh->IsVisible(), pMesh->IsActive(),
+					(void*)pMesh->GetCurrentSector(), pMesh->GetSubMeshEntityNum());
+			iPhysicsBody* pBody = pEntity->GetBody(0);
+			cVector3f vPos = pBody->GetLocalPosition();
+			pBody->SetPosition(vPos + cVector3f(0, 0.05f, 0));   // variant A: lift 5 cm
+			// pBody->SetPosition(vPos);                           // variant B: same position, re-set
+			Log("NUDGE notebook from %s\n", vPos.ToString().c_str());
+			Log("  bodyBV %s  meshBV %s\n",
+	pEntity->GetBody(0)->GetBV()->GetWorldCenter().ToString().c_str(),
+	pEntity->GetMeshEntity()->GetBoundingVolume()->GetWorldCenter().ToString().c_str());
+		}
+	}
+}
+
+//------------------------------------------------------------------------
+
 void cMapHandler::OnPostSceneDraw()
 {
 	////////////////////////////////////
@@ -1211,8 +1244,8 @@ void cMapHandler::OnPostSceneDraw()
 	cCamera3D *pCam = static_cast<cCamera3D*>(mpScene->GetCamera());
 	mpInit->mpGame->GetGraphics()->GetLowLevel()->SetMatrix(eMatrix_ModelView, pCam->GetViewMatrix());
 
-	//mpScene->GetWorld3D()->GetPhysicsWorld()->RenderDebugGeometry(
-	//	mpInit->mpGame->GetGraphics()->GetLowLevel(),cColor(1,0.5f,1));
+	mpScene->GetWorld3D()->GetPhysicsWorld()->RenderDebugGeometry(
+		mpInit->mpGame->GetGraphics()->GetLowLevel(),cColor(1,0.5f,1));
 
 	
 	/*mpInit->mpGame->GetGraphics()->GetLowLevel()->SetDepthTestActive(false);
@@ -1332,7 +1365,10 @@ void cMapHandler::Update(float afTimeStep)
 	//iLowLevelSystem *pLowLevelSystem =mpInit->mpGame->GetSystem()->GetLowLevel();
 	
 	//LogUpdate(" Flashes!\n");
-	
+
+	static int n = 0;
+	if (++n == 300) DebugDumpEntities(false);
+
 	////////////////////////////
 	//Update light flashes
 	tEffectLightFlashListIt FlashIt = mlstLightFlashes.begin();

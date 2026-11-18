@@ -18,6 +18,8 @@
  */
 #include "impl/PhysicsBodyNewton.h"
 
+#include <iostream>
+
 #include "impl/CollideShapeNewton.h"
 #include "impl/PhysicsWorldNewton.h"
 #include "impl/PhysicsMaterialNewton.h"
@@ -281,6 +283,9 @@ namespace hpl {
 		SetEnabled(true);
 
 		//Log("Added force %s\n",avForce.ToString().c_str());
+		if (GetName().find("hatch") != tString::npos)
+			std::cout << "[B] '" << GetName() << "' +torque " << vTorque.ToString()
+					  << " total " << mvTotalTorque.ToString() << std::endl;
 	}
 
 	//-----------------------------------------------------------------------
@@ -318,7 +323,22 @@ namespace hpl {
 
 	void cPhysicsBodyNewton::SetEnabled(bool abEnabled)
 	{
-		NewtonBodySetFreezeState(mpNewtonBody, !abEnabled);
+		if (abEnabled)
+		{
+			NewtonBodySetFreezeState(mpNewtonBody, 0);
+			if (mfMass > 0)
+			{
+				float vZero[3] = {0, 0, 0};
+				cVector3f vPos = GetWorldPosition();
+				NewtonBodyAddImpulse(mpNewtonBody, vZero, vPos.v);
+			}
+		}
+		else
+		{
+			//mimicking the freeze in Newton 1, basically a sleep state
+			SetLinearVelocity(cVector3f(0, 0, 0));
+			SetAngularVelocity(cVector3f(0, 0, 0));
+		}
 	}
 	bool cPhysicsBodyNewton::GetEnabled() const
 	{

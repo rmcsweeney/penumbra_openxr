@@ -19,6 +19,8 @@
 #include "StdAfx.h"
 #include "PlayerState_Interact.h"
 
+#include <iostream>
+
 #include "Init.h"
 #include "Player.h"
 #include "MapHandler.h"
@@ -183,8 +185,8 @@ void cPlayerState_Grab::OnUpdate(float afTimeStep)
     cVector3f vTorque = mRotatePid.Output(cVector3f(0, 0, 0) - vOmega, afTimeStep);
     vTorque = vTorque - vOmega * 0.1f;
 
-    mpPushBody->AddTorque(vTorque * mpPushBody->GetMass());
-    //vTorque = cMath::MatrixMul(mpPushBody->GetInertiaMatrix(),vTorque);
+    //mpPushBody->AddTorque(vTorque * mpPushBody->GetMass());
+    vTorque = cMath::MatrixMul(mpPushBody->GetInertiaMatrix(),vTorque);
     //mpPushBody->AddTorque(vTorque);
   }
   else
@@ -197,7 +199,7 @@ void cPlayerState_Grab::OnUpdate(float afTimeStep)
 
     cVector3f vTorque = mRotatePid.Output(cVector3f(0, fWantedSpeed, 0) - vOmega, afTimeStep);
 
-    mpPushBody->AddTorque(vTorque * mpPushBody->GetMass());
+    //mpPushBody->AddTorque(vTorque * mpPushBody->GetMass());
     //vTorque = cMath::MatrixMul(mpPushBody->GetInertiaMatrix(),vTorque);
     //mpPushBody->AddTorque(vTorque);
 
@@ -332,6 +334,7 @@ bool cPlayerState_Grab::OnAddYaw(float afVal)
 
 bool cPlayerState_Grab::OnAddPitch(float afVal)
 {
+
   float fInvert = 1;
   if (mpInit->mpButtonHandler->GetInvertMouseY()) fInvert = -1;
 
@@ -696,8 +699,12 @@ bool cPlayerState_Move::OnAddYaw(float afVal)
 {
   if (std::abs(afVal) > kEpsilonf)
   {
-    cVector3f vForce = (mvRight * (afVal * 100.0f * mpPlayer->mfRightMul));
+  	float fResScale = mpInit->mpGame->GetGraphics()->GetLowLevel()->GetScreenSize().x / 1024.0f;
+
+    cVector3f vForce = (mvRight * (afVal * 100.0f * mpPlayer->mfRightMul)) * fResScale;
     mpPushBody->AddForceAtPosition(vForce, mvPickPoint);
+  	std::cout << "[A] Move force on '" << mpPushBody->GetName() << "' F=" << vForce.ToString()
+		  << " at " << mvPickPoint.ToString() << " mass " << mpPushBody->GetMass() << std::endl;
     mlMoveCount = 20;
   }
   else
@@ -714,9 +721,23 @@ bool cPlayerState_Move::OnAddPitch(float afVal)
 {
   if (std::abs(afVal) > kEpsilonf)
   {
-    cVector3f vForce = (mvUp * (-afVal * 100.0f  * mpPlayer->mfUpMul)) +
-      (mvForward * (afVal * -80.0f *mpPlayer->mfForwardUpMul));
+  	float fResScale = mpInit->mpGame->GetGraphics()->GetLowLevel()->GetScreenSize().y / 768.0f;
+
+    cVector3f vForce = ((mvUp * (-afVal * 100.0f  * mpPlayer->mfUpMul)) +
+      (mvForward * (afVal * -80.0f *mpPlayer->mfForwardUpMul))) * fResScale;
+
+  	// TEMP: hatch force scale test
+  	vForce = vForce * 20.0f;
+
+  	//mpPushBody->AddForceAtPosition(vForce,mvPickPoint);
     mpPushBody->AddForceAtPosition(vForce, mvPickPoint);
+  	/*std::cout << "[A] Move force on '" << mpPushBody->GetName() << "' F=" << vForce.ToString()
+		  << " at " << mvPickPoint.ToString() << " mass " << mpPushBody->GetMass() << std::endl;*/
+  	// TEMP: force scale debug
+  	std::cout << "[S] afVal " << afVal
+				<< " UpMul " << mpPlayer->mfUpMul
+				<< " ForwardUpMul " << mpPlayer->mfForwardUpMul
+				<< " RightMul " << mpPlayer->mfRightMul << std::endl;
     mlMoveCount = 20;
   }
   else
