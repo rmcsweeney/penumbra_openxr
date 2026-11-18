@@ -696,7 +696,10 @@ bool cPlayerState_Move::OnAddYaw(float afVal)
 {
   if (std::abs(afVal) > kEpsilonf)
   {
-    cVector3f vForce = (mvRight * (afVal * 100.0f * mpPlayer->mfRightMul));
+  	//due to original resolution being far different, need a scaler for the mouse inputs
+  	float fResScale = mpInit->mpGame->GetGraphics()->GetLowLevel()->GetScreenSize().x / 1024.0f;
+
+    cVector3f vForce = (mvRight * (afVal * 100.0f * mpPlayer->mfRightMul)) * fResScale;
     mpPushBody->AddForceAtPosition(vForce, mvPickPoint);
     mlMoveCount = 20;
   }
@@ -714,8 +717,12 @@ bool cPlayerState_Move::OnAddPitch(float afVal)
 {
   if (std::abs(afVal) > kEpsilonf)
   {
-    cVector3f vForce = (mvUp * (-afVal * 100.0f  * mpPlayer->mfUpMul)) +
-      (mvForward * (afVal * -80.0f *mpPlayer->mfForwardUpMul));
+  	float fResScale = mpInit->mpGame->GetGraphics()->GetLowLevel()->GetScreenSize().y / 768.0f;
+
+    cVector3f vForce = ((mvUp * (-afVal * 100.0f  * mpPlayer->mfUpMul)) +
+      (mvForward * (afVal * -80.0f *mpPlayer->mfForwardUpMul))) * fResScale;
+
+  	//mpPushBody->AddForceAtPosition(vForce,mvPickPoint);
     mpPushBody->AddForceAtPosition(vForce, mvPickPoint);
     mlMoveCount = 20;
   }

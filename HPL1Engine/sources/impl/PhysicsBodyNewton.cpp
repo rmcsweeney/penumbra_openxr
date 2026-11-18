@@ -318,7 +318,22 @@ namespace hpl {
 
 	void cPhysicsBodyNewton::SetEnabled(bool abEnabled)
 	{
-		NewtonBodySetFreezeState(mpNewtonBody, !abEnabled);
+		if (abEnabled)
+		{
+			NewtonBodySetFreezeState(mpNewtonBody, 0);
+			if (mfMass > 0)
+			{
+				float vZero[3] = {0, 0, 0};
+				cVector3f vPos = GetWorldPosition();
+				NewtonBodyAddImpulse(mpNewtonBody, vZero, vPos.v);
+			}
+		}
+		else
+		{
+			//mimicking the freeze in Newton 1, basically a sleep state
+			SetLinearVelocity(cVector3f(0, 0, 0));
+			SetAngularVelocity(cVector3f(0, 0, 0));
+		}
 	}
 	bool cPhysicsBodyNewton::GetEnabled() const
 	{

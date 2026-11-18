@@ -59,10 +59,7 @@ namespace hpl {
 										const NewtonBody* apBody1, const NewtonBody* apBody2, int);
 		static void ProcessContactCallback(const NewtonJoint *joint, float, int);
 
-        static iPhysicsBody *mpContactBody1;
-		static iPhysicsBody *mpContactBody2;
-		static cPhysicsContactData mContactData;
-		static int mlContactNum;
+
 
 		NewtonWorld *mpNewtonWorld;
 

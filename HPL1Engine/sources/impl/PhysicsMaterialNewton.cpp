@@ -207,41 +207,40 @@ namespace hpl {
 	// STATIC NEWTON CALLBACKS
 	//////////////////////////////////////////////////////////////////////////
 
-	iPhysicsBody *cPhysicsMaterialNewton::mpContactBody1 = NULL;
-	iPhysicsBody *cPhysicsMaterialNewton::mpContactBody2 = NULL;
-	int cPhysicsMaterialNewton::mlContactNum =0;
-	cPhysicsContactData cPhysicsMaterialNewton::mContactData;
+
 
 	//-----------------------------------------------------------------------
 	int cPhysicsMaterialNewton::BeginContactCallback(const NewtonMaterial* material,
 									const NewtonBody* apBody1, const NewtonBody* apBody2, int)
 	{
-		mpContactBody1 = (cPhysicsBodyNewton*) NewtonBodyGetUserData(apBody1);
-		mpContactBody2 = (cPhysicsBodyNewton*) NewtonBodyGetUserData(apBody2);
 
-        if(mpContactBody1->GetCollide()==false) return 0;
-		if(mpContactBody2->GetCollide()==false) return 0;
+		auto pContactBody1 = (cPhysicsBodyNewton*) NewtonBodyGetUserData(apBody1);
+		auto pContactBody2 = (cPhysicsBodyNewton*) NewtonBodyGetUserData(apBody2);
 
-		if(mpContactBody1->IsActive()==false) return 0;
-		if(mpContactBody2->IsActive()==false) return 0;
+		bool bLog = pContactBody1->GetName().find("notebook") != tString::npos ||
+			pContactBody2->GetName().find("notebook") != tString::npos;
+		// ... before each "return 0;" and the final "return 1;":
+        if(pContactBody1->GetCollide()==false) { return 0; }
+		if(pContactBody2->GetCollide()==false) { return 0; }
 
-		if(mpContactBody1->IsRagDoll() && mpContactBody2->GetCollideRagDoll()==false) return 0;
-		if(mpContactBody2->IsRagDoll() && mpContactBody1->GetCollideRagDoll()==false) return 0;
+		if(pContactBody1->IsActive()==false) { return 0; }
+		if(pContactBody2->IsActive()==false) { return 0; }
 
-		if(mpContactBody1->IsCharacter() && mpContactBody2->GetCollideCharacter()==false) return 0;
-		if(mpContactBody2->IsCharacter() && mpContactBody1->GetCollideCharacter()==false) return 0;
+		if(pContactBody1->IsRagDoll() && pContactBody2->GetCollideRagDoll()==false) { return 0; }
+		if(pContactBody2->IsRagDoll() && pContactBody1->GetCollideRagDoll()==false) { return 0; }
 
-    if (mpContactBody1->IsPlayer() && mpContactBody2->GetCollidePlayer() == false) return 0;
-    if (mpContactBody2->IsPlayer() && mpContactBody1->GetCollidePlayer() == false) return 0;
+		if(pContactBody1->IsCharacter() && pContactBody2->GetCollideCharacter()==false) { return 0; }
+		if(pContactBody2->IsCharacter() && pContactBody1->GetCollideCharacter()==false) { return 0; }
+
+    if (pContactBody1->IsPlayer() && pContactBody2->GetCollidePlayer() == false) { return 0; }
+    if (pContactBody2->IsPlayer() && pContactBody1->GetCollidePlayer() == false) { return 0; }
 
 		//Log("----- Begin contact between body '%s' and '%s'.\n",mpContactBody1->GetName().c_str(),
 		//													mpContactBody2->GetName().c_str());
 
-		//Reset contact num
-		mlContactNum =0;
 
-		if(mpContactBody1->OnBeginCollision(mpContactBody2)==false) return 0;
-		if(mpContactBody2->OnBeginCollision(mpContactBody1)==false) return 0;
+		if(pContactBody1->OnBeginCollision(pContactBody2)==false) return 0;
+		if(pContactBody2->OnBeginCollision(pContactBody1)==false) return 0;
 
 		return 1;
 	}
